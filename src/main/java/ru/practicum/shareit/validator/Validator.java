@@ -1,8 +1,8 @@
 package ru.practicum.shareit.validator;
 
-import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.exception.model.ValidationException;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.model.User;
 
 public class Validator {
 

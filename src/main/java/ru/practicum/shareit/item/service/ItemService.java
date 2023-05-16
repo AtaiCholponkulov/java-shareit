@@ -1,16 +1,17 @@
-package ru.practicum.shareit.item;
+package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.item.storage.ItemStorage;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static ru.practicum.shareit.mapper.Mapper.map;
+import static ru.practicum.shareit.item.mapper.ItemMapper.map;
 
 @Service
 @RequiredArgsConstructor

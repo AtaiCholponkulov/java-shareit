@@ -1,4 +1,4 @@
-package ru.practicum.shareit.mapper;
+package ru.practicum.shareit.item.mapper;
 
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
@@ -6,7 +6,7 @@ import ru.practicum.shareit.item.model.Item;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Mapper {
+public class ItemMapper {
 
     public static Item map(ItemDto itemDto, int ownerId) {
         return Item.builder()
@@ -38,6 +38,6 @@ public class Mapper {
     }
 
     public static List<ItemDto> map(List<Item> items) {
-        return items.stream().map(Mapper::map).collect(Collectors.toList());
+        return items.stream().map(ItemMapper::map).collect(Collectors.toList());
     }
 }
