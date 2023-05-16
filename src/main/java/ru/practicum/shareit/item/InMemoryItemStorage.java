@@ -13,7 +13,7 @@ import static ru.practicum.shareit.validator.Validator.validateUpdateItem;
 
 @Component("InMemoryItemStorage")
 @Slf4j
-public class InMemoryItemStorage implements ItemStorage{
+public class InMemoryItemStorage implements ItemStorage {
 
     private final Map<Integer, Item> db = new HashMap<>();
     private final Map<Integer, List<Integer>> ownerItemsIds = new HashMap<>();
