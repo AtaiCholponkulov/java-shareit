@@ -12,7 +12,7 @@ public class CommentMapper {
 
     public static CommentDto map(Comment comment) {
         return CommentDto.builder()
-                .Id(comment.getId())
+                .id(comment.getId())
                 .text(comment.getText())
                 .authorName(comment.getAuthor().getName())
                 .created(comment.getCreated())
