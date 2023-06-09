@@ -1,43 +1,41 @@
 package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.dto.UserDto;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exception.model.NotFoundException;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
-
-import static ru.practicum.shareit.user.mapper.UserMapper.map;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
-    @Qualifier("InMemoryUserStorage")
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
-    public User add(UserDto userDto) {
-        User user = map(userDto);
-        return userStorage.add(user);
+    @Transactional
+    public User add(User user) {
+        return userRepository.save(user);
     }
 
     public User get(int userId) {
-        return userStorage.get(userId);
+        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Такого пользователя нет в базе id=" + userId));
     }
 
-    public User update(int userId, UserDto userDto) {
-        User user = map(userDto);
-        user.setId(userId);
-        return userStorage.update(user);
+    @Transactional
+    public User update(User changedUser) {
+        User dbUser = this.get(changedUser.getId());
+        dbUser.update(changedUser);
+        return userRepository.save(dbUser);
     }
 
     public void delete(int userId) {
-        userStorage.delete(userId);
+        userRepository.deleteById(userId);
     }
 
     public List<User> getAll() {
-        return userStorage.getAll();
+        return userRepository.findAll();
     }
 }
