@@ -38,8 +38,8 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDtoWithBookingsAndComments> getOwnerItems(@RequestHeader(name = X_SHARER_USER_ID) int ownerId) {
-        return itemService.getOwnerItems(ownerId);
+    public List<ItemDtoWithBookingsAndComments> getViewerItems(@RequestHeader(name = X_SHARER_USER_ID) int viewerId) {
+        return itemService.getViewerItems(viewerId);
     }
 
     @GetMapping("/search")
