@@ -1,49 +1,31 @@
 package ru.practicum.shareit.item.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBookingsAndComments;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.storage.ItemStorage;
-import ru.practicum.shareit.user.service.UserService;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static ru.practicum.shareit.item.mapper.ItemMapper.map;
-
 @Service
-@RequiredArgsConstructor
-public class ItemService {
+public interface ItemService {
+    @Transactional
+    Comment add(CommentDto commentDto, int commentatorId, int itemId);
 
-    @Qualifier("InMemoryItemStorage")
-    private final ItemStorage itemStorage;
-    private final UserService userService;
+    @Transactional
+    Item add(ItemDto itemDto, int ownerId);
 
-    public ItemDto add(ItemDto itemDto, int ownerId) {
-        userService.get(ownerId);
-        Item item = map(itemDto, ownerId);
-        return map(itemStorage.add(item));
-    }
+    ItemDtoWithBookingsAndComments get(int itemId, int viewerId);
 
-    public ItemDto get(int itemId, int viewerId) {
-        userService.get(viewerId);
-        return map(itemStorage.get(itemId));
-    }
+    Item get(int itemId);
 
-    public List<ItemDto> getOwnerItems(int ownerId) {
-        return map(itemStorage.getOwnerItems(ownerId));
-    }
+    List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId);
 
-    public List<ItemDto> search(String word, int viewerId) {
-        userService.get(viewerId);
-        return word.isBlank() ? new ArrayList<>() : map(itemStorage.search(word));
-    }
+    List<Item> search(String word, int viewerId);
 
-    public ItemDto update(int itemId, int ownerId, ItemDto itemDto) {
-        userService.get(ownerId);
-        Item item = map(itemId, ownerId, itemDto);
-        return map(itemStorage.update(item));
-    }
+    @Transactional
+    Item update(int itemId, int ownerId, ItemDto itemDto);
 }

@@ -1,17 +1,36 @@
 package ru.practicum.shareit.item.model;
 
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.*;
+import ru.practicum.shareit.user.model.User;
 
-@Data
-@Builder
+import javax.persistence.*;
+
+@Entity
+@Table(name = "items")
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class Item {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column
     private String name;
+
+    @Column
     private String description;
+
+    @Column(name = "is_available")
     private Boolean available;
-    private Integer ownerId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "owner_id")
+    @JsonIgnore
+    private User owner;
 
     public void update(Item item) {
         if (item.getName() != null)

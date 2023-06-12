@@ -1,43 +1,23 @@
 package ru.practicum.shareit.user.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.dto.UserDto;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.storage.UserStorage;
 
 import java.util.List;
 
-import static ru.practicum.shareit.user.mapper.UserMapper.map;
-
 @Service
-@RequiredArgsConstructor
-public class UserService {
+public interface UserService {
+    @Transactional
+    User add(User user);
 
-    @Qualifier("InMemoryUserStorage")
-    private final UserStorage userStorage;
+    User get(int userId);
 
-    public User add(UserDto userDto) {
-        User user = map(userDto);
-        return userStorage.add(user);
-    }
+    @Transactional
+    User update(User changedUser);
 
-    public User get(int userId) {
-        return userStorage.get(userId);
-    }
+    @Transactional
+    void delete(int userId);
 
-    public User update(int userId, UserDto userDto) {
-        User user = map(userDto);
-        user.setId(userId);
-        return userStorage.update(user);
-    }
-
-    public void delete(int userId) {
-        userStorage.delete(userId);
-    }
-
-    public List<User> getAll() {
-        return userStorage.getAll();
-    }
+    List<User> getAll();
 }
