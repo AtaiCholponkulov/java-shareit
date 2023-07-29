@@ -12,14 +12,24 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
-    List<Booking> findAllByBookerIdOrderByStartDateDesc(Integer bookerId);
+    List<Booking> findAllByBookerId(Integer bookerId, Pageable pageable);
+
+    List<Booking> findAllByBookerIdOrderByEndDateDesc(Integer bookerId);
 
     @Query("SELECT b " +
             "FROM Booking AS b " +
             "JOIN b.item AS i " +
             "JOIN i.owner AS o " +
             "WHERE o.id = ?1 " +
-            "ORDER BY b.startDate DESC")
+            "ORDER BY b.endDate DESC")
+    List<Booking> findAllByBookingItemOwnerId(Integer ownerId, Pageable pageable);
+
+    @Query("SELECT b " +
+            "FROM Booking AS b " +
+            "JOIN b.item AS i " +
+            "JOIN i.owner AS o " +
+            "WHERE o.id = ?1 " +
+            "ORDER BY b.endDate DESC")
     List<Booking> findAllByBookingItemOwnerId(Integer ownerId);
 
     List<Booking> findAllByItemIdAndStatus(Integer itemId, BookingStatus status);

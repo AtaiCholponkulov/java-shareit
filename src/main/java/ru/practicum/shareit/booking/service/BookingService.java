@@ -19,7 +19,7 @@ public interface BookingService {
     @Transactional
     Booking update(int viewerId, boolean approved, int bookingId);
 
-    List<Booking> getUserBookings(int viewerId, String state);
+    List<Booking> getUserBookings(int viewerId, Integer from, Integer size, String state);
 
-    List<Booking> getBookingsOfUserItems(int viewerId, String state);
+    List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state);
 }

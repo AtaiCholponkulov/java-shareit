@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS requests (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     description varchar(500),
-    requester_id BIGINT REFERENCES users(id)
+    requester_id BIGINT REFERENCES users(id),
+    created TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS items (

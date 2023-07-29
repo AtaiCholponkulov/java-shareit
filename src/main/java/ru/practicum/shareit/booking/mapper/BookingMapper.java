@@ -48,6 +48,7 @@ public class BookingMapper {
     public static List<BookingDtoOut> map(List<Booking> bookings) {
         return bookings.stream()
                 .map(BookingMapper::map)
+//                .sorted((booking1, booking2) -> booking2.getEnd().compareTo(booking1.getEnd()))
                 .collect(Collectors.toList());
     }
 }

@@ -5,14 +5,15 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBookingsAndComments;
-import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.validator.Validator;
 
 import java.util.List;
 
 import static ru.practicum.shareit.item.mapper.CommentMapper.map;
 import static ru.practicum.shareit.item.mapper.ItemMapper.map;
-import static ru.practicum.shareit.validator.Validator.*;
+import static ru.practicum.shareit.validator.Validator.validateItem;
+import static ru.practicum.shareit.validator.Validator.validateUpdateItem;
 
 @RestController
 @RequestMapping("/items")
@@ -28,7 +29,7 @@ public class ItemController {
     public ItemDto add(@RequestBody ItemDto itemDto,
                        @RequestHeader(name = X_SHARER_USER_ID) int ownerId) {
         validateItem(itemDto);
-        return ItemMapper.map(itemService.add(itemDto, ownerId));
+        return map(itemService.add(itemDto, ownerId));
     }
 
     @GetMapping("/{itemId}")
@@ -38,14 +39,18 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDtoWithBookingsAndComments> getViewerItems(@RequestHeader(name = X_SHARER_USER_ID) int viewerId) {
-        return itemService.getViewerItems(viewerId);
+    public List<ItemDtoWithBookingsAndComments> getViewerItems(@RequestHeader(name = X_SHARER_USER_ID) int viewerId,
+                                                               @RequestParam(required = false) Integer from,
+                                                               @RequestParam(required = false) Integer size) {
+        return itemService.getViewerItems(viewerId, from, size);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> search(@RequestParam String text,
+    public List<ItemDto> search(@RequestParam(required = false) Integer from,
+                                @RequestParam(required = false) Integer size,
+                                @RequestParam String text,
                                 @RequestHeader(name = X_SHARER_USER_ID) int viewerId) {
-        return map(itemService.search(text, viewerId));
+        return map(itemService.search(text, from, size, viewerId));
     }
 
     @PatchMapping("/{itemId}")
@@ -53,7 +58,7 @@ public class ItemController {
                           @RequestHeader(name = X_SHARER_USER_ID) int ownerId,
                           @RequestBody ItemDto itemDto) {
         validateUpdateItem(itemDto);
-        return ItemMapper.map(itemService.update(itemId, ownerId, itemDto));
+        return map(itemService.update(itemId, ownerId, itemDto));
     }
 
     //----------------------------------------------COMMENT ENDPOINTS---------------------------------------------------
@@ -62,7 +67,7 @@ public class ItemController {
     public CommentDto add(@RequestBody CommentDto commentDto,
                           @RequestHeader(name = X_SHARER_USER_ID) int commentatorId,
                           @PathVariable int itemId) {
-        validateComment(commentDto);
+        Validator.validate(commentDto);
         return map(itemService.add(commentDto, commentatorId, itemId));
     }
 }

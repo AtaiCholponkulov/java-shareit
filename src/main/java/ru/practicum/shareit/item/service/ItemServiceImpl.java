@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
@@ -18,18 +19,20 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.request.model.ItemRequest;
+import ru.practicum.shareit.request.service.ItemRequestService;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.mapToItemField;
 import static ru.practicum.shareit.item.mapper.CommentMapper.map;
 import static ru.practicum.shareit.item.mapper.ItemMapper.map;
+import static ru.practicum.shareit.validator.Validator.isForPagination;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,7 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
     private final CommentRepository commentRepository;
+    private final ItemRequestService itemRequestService;
 
     //-----------------------------------------------COMMENT METHODS----------------------------------------------------
 
@@ -66,7 +70,9 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public Item add(ItemDto itemDto, int ownerId) {
         User owner = userService.get(ownerId);
-        Item item = map(itemDto, owner);
+        Integer requestId = itemDto.getRequestId();
+        ItemRequest itemRequest = requestId != null ? itemRequestService.get(requestId) : null;
+        Item item = map(itemDto, owner, itemRequest);
         return itemRepository.save(item);
     }
 
@@ -89,23 +95,42 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId) {
+    public List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId, Integer from, Integer size) {
+        userService.get(viewerId);
         LocalDateTime now = LocalDateTime.now();
-        return itemRepository.findAllByOwnerIdOrderById(viewerId)
+        List<Item> itemList;
+        if (isForPagination(from, size)) {
+            Pageable page = PageRequest.of(from, size, Sort.by(Sort.Direction.ASC, "id"));
+            itemList = itemRepository.findAllByOwnerIdOrderById(viewerId, page);
+        } else {
+            itemList = itemRepository.findAllByOwnerIdOrderById(viewerId);
+        }
+        if (itemList.isEmpty()) return new ArrayList<>();
+        Map<Integer, Item> itemMap = itemList.stream()
+                .collect(Collectors.toMap(Item::getId, Function.identity()));
+        Map<Integer, List<Comment>> commentMap = commentRepository.findAllByItemIdIn(itemMap.keySet())
+                .stream()
+                .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
+        return itemMap.values()
                 .stream()
                 .map(dbItem -> {
-                    List<Comment> comments = commentRepository.findAllByItemIdOrderByCreatedDesc(dbItem.getId());
-                    ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(comments));
-                    setItemDtoLastAndNextBooking(itemDto, now);
+                    ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(commentMap.getOrDefault(dbItem.getId(), Collections.emptyList())));
+                    setItemDtoLastAndNextBooking(itemDto, now);//TODO N+1 issue
                     return itemDto;
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<Item> search(String word, int viewerId) {
+    public List<Item> search(String word, Integer from, Integer size, int viewerId) {
         userService.get(viewerId);
-        return word.isBlank() ? new ArrayList<>() : itemRepository.findAllAvailableItemsByWord(word.toLowerCase());
+        if (word.isBlank()) return new ArrayList<>();
+        if (isForPagination(from, size)) {
+            Pageable page = PageRequest.of(from, size, Sort.unsorted());
+            return itemRepository.findAllAvailableItemsByWord(word.toLowerCase(), page);
+        } else {
+            return itemRepository.findAllAvailableItemsByWord(word.toLowerCase());
+        }
     }
 
     @Transactional

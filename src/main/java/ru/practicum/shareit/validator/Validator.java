@@ -4,6 +4,7 @@ import ru.practicum.shareit.booking.dto.BookingDtoIn;
 import ru.practicum.shareit.exception.model.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.time.LocalDateTime;
@@ -59,8 +60,21 @@ public class Validator {
             throw new ValidationException("Ошибка в теле запроса");
     }
 
-    public static void validateComment(CommentDto commentDto) {
+    public static void validate(CommentDto commentDto) {
         if (commentDto.getText() == null || commentDto.getText().isBlank())
             throw new ValidationException("Пустой комментарий");
+    }
+
+    public static void validate(ItemRequestDto itemRequest) {
+        if (itemRequest.getDescription() == null || itemRequest.getDescription().isBlank())
+            throw new ValidationException("Пустой запрос");
+    }
+
+    public static boolean isForPagination(Integer from, Integer size) {
+        if (from == null && size == null)
+            return false;
+        if (from != null && from >= 0 && size != null && size > 0)
+            return true;
+        throw new ValidationException("Ошибочные параметры запроса");
     }
 }

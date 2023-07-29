@@ -1,6 +1,9 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
@@ -15,11 +18,13 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.map;
+import static ru.practicum.shareit.validator.Validator.isForPagination;
 
 @Service
 @RequiredArgsConstructor
@@ -76,17 +81,30 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> getUserBookings(int viewerId, String state) {
+    public List<Booking> getUserBookings(int viewerId, Integer from, Integer size, String state) {
         userService.get(viewerId);
-        List<Booking> userBookings = bookingRepository.findAllByBookerIdOrderByStartDateDesc(viewerId);
-        return filterByState(userBookings, state);
+        List<Booking> userBookings;
+        if (isForPagination(from, size)) {
+            Pageable page = PageRequest.of(0, from + size, Sort.by("endDate").descending());
+            userBookings = bookingRepository.findAllByBookerId(viewerId, page);
+            userBookings = userBookings.subList(from, userBookings.size());
+        } else {
+            userBookings = bookingRepository.findAllByBookerIdOrderByEndDateDesc(viewerId);
+        }
+        return userBookings.isEmpty() ? new ArrayList<>() : filterByState(userBookings, state);
     }
 
     @Override
-    public List<Booking> getBookingsOfUserItems(int viewerId, String state) {
+    public List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state) {
         userService.get(viewerId);
-        List<Booking> bookingsOfUserItems = bookingRepository.findAllByBookingItemOwnerId(viewerId);
-        return filterByState(bookingsOfUserItems, state);
+        List<Booking> bookingsOfUserItems;
+        if (isForPagination(from, size)) {
+            Pageable page = PageRequest.of(from, size, Sort.by("endDate").descending());
+            bookingsOfUserItems = bookingRepository.findAllByBookingItemOwnerId(viewerId, page);
+        } else {
+            bookingsOfUserItems = bookingRepository.findAllByBookingItemOwnerId(viewerId);
+        }
+        return bookingsOfUserItems.isEmpty() ? new ArrayList<>() : filterByState(bookingsOfUserItems, state);
     }
 
     private List<Booking> filterByState(List<Booking> bookings, String state) {
