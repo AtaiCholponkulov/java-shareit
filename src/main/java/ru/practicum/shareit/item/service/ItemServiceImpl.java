@@ -115,7 +115,7 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(dbItem -> {
                     ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(commentMap.getOrDefault(dbItem.getId(), Collections.emptyList())));
-                    setItemDtoLastAndNextBooking(itemDto, now);//TODO N+1 issue
+                    setItemDtoLastAndNextBooking(itemDto, now);
                     return itemDto;
                 })
                 .collect(Collectors.toList());

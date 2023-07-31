@@ -99,7 +99,7 @@ public class BookingServiceImpl implements BookingService {
         userService.get(viewerId);
         List<Booking> bookingsOfUserItems;
         if (isForPagination(from, size)) {
-            Pageable page = PageRequest.of(from, size, Sort.by("endDate").descending());
+            Pageable page = PageRequest.of(from, size);
             bookingsOfUserItems = bookingRepository.findAllByBookingItemOwnerId(viewerId, page);
         } else {
             bookingsOfUserItems = bookingRepository.findAllByBookingItemOwnerId(viewerId);

@@ -23,7 +23,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User get(int userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Такого пользователя нет в базе id=" + userId));
+        return userRepository.findById(userId).orElseThrow(() ->
+                new NotFoundException("Такого пользователя нет в базе id=" + userId));
     }
 
     @Transactional
