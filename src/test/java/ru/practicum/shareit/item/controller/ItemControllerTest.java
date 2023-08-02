@@ -85,7 +85,8 @@ class ItemControllerTest {
                         jsonPath("$.name", is(item.getName())),
                         jsonPath("$.description", is(item.getDescription())),
                         jsonPath("$.available", is(item.getAvailable())),
-                        jsonPath("$.requestId", nullValue()));
+                        jsonPath("$.lastBooking", nullValue()),
+                        jsonPath("$.nextBooking", nullValue()));
     }
 
     @Test
@@ -110,7 +111,8 @@ class ItemControllerTest {
                         jsonPath("$[0].name", is(item.getName())),
                         jsonPath("$[0].description", is(item.getDescription())),
                         jsonPath("$[0].available", is(item.getAvailable())),
-                        jsonPath("$[0].requestId", nullValue()));
+                        jsonPath("$[0].lastBooking", nullValue()),
+                        jsonPath("$[0].nextBooking", nullValue()));
     }
 
     @Test
@@ -121,10 +123,10 @@ class ItemControllerTest {
                 true,
                 new User(0, "user", "user@mail.com"),
                 null);
-        when(itemService.search(anyString(), anyInt(), anyInt(), anyInt()))
+        when(itemService.search("word", null, null, 0))
                 .thenReturn(List.of(item));
 
-        mvc.perform(MockMvcRequestBuilders.get("/items/search")
+        mvc.perform(MockMvcRequestBuilders.get("/items/search?text=word")
                         .characterEncoding(StandardCharsets.UTF_8)
                         .header("X-Sharer-User-Id", 0)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -146,7 +148,7 @@ class ItemControllerTest {
                 true,
                 new User(0, "user", "user@mail.com"),
                 null);
-        ItemDto itemDto = ItemDto.builder().build();
+        ItemDto itemDto = ItemDto.builder().name("name").description("descr").available(true).build();
         when(itemService.update(anyInt(), anyInt(), ArgumentMatchers.any(ItemDto.class)))
                 .thenReturn(item);
 
@@ -157,18 +159,17 @@ class ItemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpectAll(status().isOk(),
-                        jsonPath("$", hasSize(1)),
-                        jsonPath("$[0].id", is(item.getId()), Integer.class),
-                        jsonPath("$[0].name", is(item.getName())),
-                        jsonPath("$[0].description", is(item.getDescription())),
-                        jsonPath("$[0].available", is(item.getAvailable())),
-                        jsonPath("$[0].requestId", nullValue()));
+                        jsonPath("$.id", is(item.getId()), Integer.class),
+                        jsonPath("$.name", is(item.getName())),
+                        jsonPath("$.description", is(item.getDescription())),
+                        jsonPath("$.available", is(item.getAvailable())),
+                        jsonPath("$.requestId", nullValue()));
     }
 
     @Test
     void addComment() throws Exception {
         Comment comment = new Comment(0, "text", null, new User(null, "author", null), null);
-        CommentDto commentDto = CommentDto.builder().build();
+        CommentDto commentDto = CommentDto.builder().text("text").build();
         when(itemService.add(ArgumentMatchers.any(CommentDto.class), anyInt(), anyInt()))
                 .thenReturn(comment);
 
@@ -179,10 +180,9 @@ class ItemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpectAll(status().isOk(),
-                        jsonPath("$", hasSize(1)),
-                        jsonPath("$[0].id", is(comment.getId()), Integer.class),
-                        jsonPath("$[0].text", is(comment.getText())),
-                        jsonPath("$[0].authorName", is(comment.getAuthor().getName())),
-                        jsonPath("$[0].created", nullValue()));
+                        jsonPath("$.id", is(comment.getId()), Integer.class),
+                        jsonPath("$.text", is(comment.getText())),
+                        jsonPath("$.authorName", is(comment.getAuthor().getName())),
+                        jsonPath("$.created", nullValue()));
     }
 }
