@@ -1,9 +1,11 @@
 package ru.practicum.shareit.item.service;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
@@ -28,9 +30,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
-class ItemServiceImplTest {
+class ItemServiceUnitTest {
 
     private final ItemRepository itemRepository = Mockito.mock(ItemRepository.class);
     private final BookingRepository bookingRepository = Mockito.mock(BookingRepository.class);
@@ -78,7 +82,7 @@ class ItemServiceImplTest {
                 .thenReturn(Optional.of(item));
         Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
                 .thenReturn(List.of(booking));
-        Mockito.when(commentRepository.save(Mockito.any(Comment.class)))
+        Mockito.when(commentRepository.save(any(Comment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Comment answerComment = assertDoesNotThrow(() -> itemService.add(commentDto, commentatorId, item.getId()));
@@ -108,7 +112,7 @@ class ItemServiceImplTest {
                 .thenReturn(Optional.of(item));
         Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
                 .thenReturn(List.of(booking));
-        Mockito.when(commentRepository.save(Mockito.any(Comment.class)))
+        Mockito.when(commentRepository.save(any(Comment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
@@ -129,7 +133,7 @@ class ItemServiceImplTest {
                 .thenReturn(Optional.of(item));
         Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
                 .thenReturn(Collections.emptyList());
-        Mockito.when(commentRepository.save(Mockito.any(Comment.class)))
+        Mockito.when(commentRepository.save(any(Comment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
@@ -145,7 +149,7 @@ class ItemServiceImplTest {
                 .build();
         Mockito.when(userService.get(itemOwner.getId()))
                 .thenReturn(itemOwner);
-        Mockito.when(itemRepository.save(Mockito.any(Item.class)))
+        Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Item answerItem = itemService.add(itemDto, itemOwner.getId());
@@ -170,7 +174,7 @@ class ItemServiceImplTest {
                 .thenReturn(itemOwner);
         Mockito.when(itemRequestService.get(itemRequest.getId()))
                 .thenReturn(itemRequest);
-        Mockito.when(itemRepository.save(Mockito.any(Item.class)))
+        Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Item answerItem = itemService.add(itemDto, itemOwner.getId());
@@ -189,8 +193,18 @@ class ItemServiceImplTest {
                 .thenReturn(Optional.of(item));
         Mockito.when(commentRepository.findAllByItemIdOrderByCreatedDesc(item.getId()))
                 .thenReturn(Collections.emptyList());
+        Mockito.when(bookingRepository.findPrevByItemIdAndStatus(
+                anyInt(),
+                any(BookingStatus.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(new SliceImpl<>(Collections.emptyList()));
+        Mockito.when(bookingRepository.findNextByItemIdAndStatus(
+                anyInt(),
+                any(BookingStatus.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(new SliceImpl<>(Collections.emptyList()));
 
-        ItemDtoWithBookingsAndComments answer = itemService.get(item.getId(), requestOwner.getId());
+        ItemDtoWithBookingsAndComments answer = itemService.get(item.getId(), itemOwner.getId());
         assertEquals(item.getId(), answer.getId());
         assertEquals(0, answer.getComments().size());
         assertEquals(item.getName(), answer.getName());
@@ -231,51 +245,126 @@ class ItemServiceImplTest {
     }
 
     @Test
-    void getViewerItemsWithoutPagination() {
-        Mockito.when(userService.get(Mockito.anyInt()))
+    void getEmptyViewerItemsWithoutPagination() {
+        Mockito.when(userService.get(anyInt()))
                 .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class)))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt()))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
                 .thenReturn(Collections.emptyList());
 
         assertEquals(0, itemService.getViewerItems(itemOwner.getId(), null, null).size());
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class));
+                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(1))
-                .findAllByOwnerIdOrderById(Mockito.anyInt());
+                .findAllByOwnerIdOrderById(anyInt());
+    }
+
+    @Test
+    void getViewerItemsWithoutPagination() {
+        Comment comment = new Comment(0, "comment", item, requestOwner, now);
+        Booking booking = new Booking(0,
+                now.minusDays(2),
+                now.minusDays(1),
+                item,
+                requestOwner,
+                BookingStatus.APPROVED);
+        Mockito.when(userService.get(anyInt()))
+                .thenReturn(null);
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
+                .thenReturn(List.of(item));
+        Mockito.when(commentRepository.findAllByItemIdIn(Mockito.anySet()))
+                .thenReturn(List.of(comment));
+        Mockito.when(bookingRepository.findPrevByItemIdAndStatus(
+                anyInt(),
+                any(BookingStatus.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(new SliceImpl<>(List.of(booking)));
+        Mockito.when(bookingRepository.findNextByItemIdAndStatus(
+                anyInt(),
+                any(BookingStatus.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(new SliceImpl<>(Collections.emptyList()));
+
+        List<ItemDtoWithBookingsAndComments> result = itemService.getViewerItems(itemOwner.getId(), null, null);
+        Mockito.verify(itemRepository, Mockito.times(0))
+                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
+        Mockito.verify(itemRepository, Mockito.times(1))
+                .findAllByOwnerIdOrderById(anyInt());
+        assertThat(result, Matchers.hasSize(1));
+        assertThat(result.get(0).getId(), Matchers.is(item.getId()));
+        assertThat(result.get(0).getName(), Matchers.is(item.getName()));
+        assertThat(result.get(0).getAvailable(), Matchers.is(item.getAvailable()));
+        assertThat(result.get(0).getNextBooking(), Matchers.nullValue());
+        assertThat(result.get(0).getLastBooking(), Matchers.notNullValue());
+        assertThat(result.get(0).getLastBooking().getStart(), Matchers.is(booking.getStartDate()));
+        assertThat(result.get(0).getLastBooking().getEnd(), Matchers.is(booking.getEndDate()));
+        assertThat(result.get(0).getComments(), Matchers.hasSize(1));
+        assertThat(result.get(0).getComments().get(0).getText(), Matchers.is(comment.getText()));
     }
 
     @Test
     void getViewerItemsWithPagination() {
-        Mockito.when(userService.get(Mockito.anyInt()))
+        Mockito.when(userService.get(anyInt()))
                 .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class)))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt()))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
                 .thenReturn(Collections.emptyList());
 
         assertEquals(0, itemService.getViewerItems(itemOwner.getId(), 0, 1).size());
         Mockito.verify(itemRepository, Mockito.times(1))
-                .findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class));
+                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(Mockito.anyInt());
+                .findAllByOwnerIdOrderById(anyInt());
     }
 
     @Test
     void getViewerItemsThrowsException() {
-        Mockito.when(userService.get(Mockito.anyInt()))
+        Mockito.when(userService.get(anyInt()))
                 .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class)))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(Mockito.anyInt()))
+        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
                 .thenReturn(Collections.emptyList());
 
         assertThrows(ValidationException.class, () -> itemService.getViewerItems(itemOwner.getId(), 5, 0));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(Mockito.anyInt(), Mockito.any(Pageable.class));
+                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(Mockito.anyInt());
+                .findAllByOwnerIdOrderById(anyInt());
+    }
+
+    @Test
+    void searchNoPagination() {
+        Mockito.when(userService.get(anyInt()))
+                .thenReturn(null);
+        Mockito.when(itemRepository.findAllAvailableItemsByWord(anyString(), any(Pageable.class)))
+                .thenReturn(List.of(item));
+        Mockito.when(itemRepository.findAllAvailableItemsByWord("item"))
+                .thenReturn(List.of(item));
+
+        List<Item> result = itemService.search("item", null, null, requestOwner.getId());
+        assertThat(result, Matchers.hasSize(1));
+        assertThat(result.get(0).getId(), Matchers.is(item.getId()));
+        assertThat(result.get(0).getName(), Matchers.is(item.getName()));
+        assertThat(result.get(0).getDescription(), Matchers.is(item.getDescription()));
+    }
+
+    @Test
+    void searchWithPagination() {
+        Mockito.when(userService.get(anyInt()))
+                .thenReturn(null);
+        Mockito.when(itemRepository.findAllAvailableItemsByWord(anyString(), any(Pageable.class)))
+                .thenReturn(List.of(item));
+        Mockito.when(itemRepository.findAllAvailableItemsByWord("item"))
+                .thenReturn(List.of(item));
+
+        List<Item> result = itemService.search("item", 0, 1, requestOwner.getId());
+        assertThat(result, Matchers.hasSize(1));
+        assertThat(result.get(0).getId(), Matchers.is(item.getId()));
+        assertThat(result.get(0).getName(), Matchers.is(item.getName()));
+        assertThat(result.get(0).getDescription(), Matchers.is(item.getDescription()));
     }
 
     @Test
@@ -290,7 +379,7 @@ class ItemServiceImplTest {
                 .thenReturn(itemOwner);
         Mockito.when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.of(item));
-        Mockito.when(itemRepository.save(Mockito.any(Item.class)))
+        Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Item answerItem = itemService.update(item.getId(), itemOwner.getId(), itemDto);
@@ -311,7 +400,7 @@ class ItemServiceImplTest {
                 .thenReturn(requestOwner);
         Mockito.when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.of(item));
-        Mockito.when(itemRepository.save(Mockito.any(Item.class)))
+        Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThrows(NotFoundException.class, () -> itemService.update(item.getId(), itemOwner.getId(), itemDto));

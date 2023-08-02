@@ -11,7 +11,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class UserServiceImplTest {
+class UserServiceUnitTest {
 
     private final UserRepository userRepository = Mockito.mock(UserRepository.class);
     private final UserService userService = new UserServiceImpl(userRepository);

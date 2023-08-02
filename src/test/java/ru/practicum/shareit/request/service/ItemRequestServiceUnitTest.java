@@ -2,6 +2,7 @@ package ru.practicum.shareit.request.service;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,8 +24,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static ru.practicum.shareit.request.mapper.ItemRequestMapper.map;
 
-class ItemRequestServiceImplTest {
+class ItemRequestServiceUnitTest {
 
+    @Mock
     private final UserService userService = Mockito.mock(UserServiceImpl.class);
     private final ItemRepository itemRepository = Mockito.mock(ItemRepository.class);
     private final ItemRequestRepository itemRequestRepository = Mockito.mock(ItemRequestRepository.class);

@@ -45,25 +45,6 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
     private final ItemRequestService itemRequestService;
 
-    //-----------------------------------------------COMMENT METHODS----------------------------------------------------
-
-    @Transactional
-    @Override
-    public Comment add(CommentDto commentDto, int commentatorId, int itemId) {
-        LocalDateTime now = LocalDateTime.now();
-        commentDto.setCreated(now);
-        User commentator = userService.get(commentatorId);
-        Item item = this.get(itemId);
-        List<Booking> itemBookings = bookingRepository.findAllByItemIdAndStatus(itemId, BookingStatus.APPROVED);
-        boolean isOkay = itemBookings.stream().anyMatch(
-                booking -> booking.getBooker().getId() == commentatorId
-                        && booking.getEndDate().isBefore(now)
-                        && booking.getStatus().equals(BookingStatus.APPROVED));
-        if (!isOkay) throw new ValidationException("Запрос не прошел проверки");
-        Comment comment = map(commentDto, item, commentator);
-        return commentRepository.save(comment);
-    }
-
     //------------------------------------------------ITEM METHODS------------------------------------------------------
 
     @Transactional
@@ -153,4 +134,24 @@ public class ItemServiceImpl implements ItemService {
         if (last.hasContent()) itemDto.setLastBooking(mapToItemField(last.getContent().get(0)));
         if (next.hasContent()) itemDto.setNextBooking(mapToItemField(next.getContent().get(0)));
     }
+
+    //-----------------------------------------------COMMENT METHODS----------------------------------------------------
+
+    @Transactional
+    @Override
+    public Comment add(CommentDto commentDto, int commentatorId, int itemId) {
+        LocalDateTime now = LocalDateTime.now();
+        commentDto.setCreated(now);
+        User commentator = userService.get(commentatorId);
+        Item item = this.get(itemId);
+        List<Booking> itemBookings = bookingRepository.findAllByItemIdAndStatus(itemId, BookingStatus.APPROVED);
+        boolean isOkay = itemBookings.stream().anyMatch(
+                booking -> booking.getBooker().getId() == commentatorId
+                        && booking.getEndDate().isBefore(now)
+                        && booking.getStatus().equals(BookingStatus.APPROVED));
+        if (!isOkay) throw new ValidationException("Запрос не прошел проверки");
+        Comment comment = map(commentDto, item, commentator);
+        return commentRepository.save(comment);
+    }
+
 }

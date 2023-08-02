@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BookingServiceImplTest {
+class BookingServiceUnitTest {
 
     private final BookingRepository bookingRepository = Mockito.mock(BookingRepository.class);
     private final ItemService itemService = Mockito.mock(ItemServiceImpl.class);
