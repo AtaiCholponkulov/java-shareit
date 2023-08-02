@@ -65,6 +65,66 @@ class ItemControllerTest {
     }
 
     @Test
+    void addItemNoNameThrowsException() throws Exception {
+        Item item = new Item(0,
+                null,
+                "descr",
+                true,
+                new User(0, "user", "user@mail.com"),
+                null);
+        when(itemService.add(any(), anyInt()))
+                .thenReturn(item);
+
+        mvc.perform(post("/items")
+                        .content(mapper.writeValueAsString(item))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addItemNoDescriptionThrowsException() throws Exception {
+        Item item = new Item(0,
+                "name",
+                null,
+                true,
+                new User(0, "user", "user@mail.com"),
+                null);
+        when(itemService.add(any(), anyInt()))
+                .thenReturn(item);
+
+        mvc.perform(post("/items")
+                        .content(mapper.writeValueAsString(item))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addItemNoAvailableThrowsException() throws Exception {
+        Item item = new Item(0,
+                "name",
+                "descr",
+                null,
+                new User(0, "user", "user@mail.com"),
+                null);
+        when(itemService.add(any(), anyInt()))
+                .thenReturn(item);
+
+        mvc.perform(post("/items")
+                        .content(mapper.writeValueAsString(item))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void get() throws Exception {
         ItemDtoWithBookingsAndComments item = ItemDtoWithBookingsAndComments.builder()
                 .id(0)
@@ -167,6 +227,27 @@ class ItemControllerTest {
     }
 
     @Test
+    void updateThrowsException() throws Exception {
+        Item item = new Item(0,
+                "item",
+                "descr",
+                true,
+                new User(0, "user", "user@mail.com"),
+                null);
+        ItemDto itemDto = ItemDto.builder().name(null).description(null).available(null).build();
+        when(itemService.update(anyInt(), anyInt(), ArgumentMatchers.any(ItemDto.class)))
+                .thenReturn(item);
+
+        mvc.perform(patch("/items/0")
+                        .content(mapper.writeValueAsString(itemDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpectAll(status().isBadRequest());
+    }
+
+    @Test
     void addComment() throws Exception {
         Comment comment = new Comment(0, "text", null, new User(null, "author", null), null);
         CommentDto commentDto = CommentDto.builder().text("text").build();
@@ -184,5 +265,21 @@ class ItemControllerTest {
                         jsonPath("$.text", is(comment.getText())),
                         jsonPath("$.authorName", is(comment.getAuthor().getName())),
                         jsonPath("$.created", nullValue()));
+    }
+
+    @Test
+    void addCommentThrowsException() throws Exception {
+        Comment comment = new Comment(0, "text", null, new User(null, "author", null), null);
+        CommentDto commentDto = CommentDto.builder().text(null).build();
+        when(itemService.add(ArgumentMatchers.any(CommentDto.class), anyInt(), anyInt()))
+                .thenReturn(comment);
+
+        mvc.perform(post("/items/0/comment")
+                        .content(mapper.writeValueAsString(commentDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 }

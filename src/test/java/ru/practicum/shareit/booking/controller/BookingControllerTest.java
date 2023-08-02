@@ -63,6 +63,24 @@ class BookingControllerTest {
     }
 
     @Test
+    void addThrowsException() throws Exception {
+        BookingDtoIn bookingDtoIn = new BookingDtoIn(0, null, LocalDateTime.now().plusDays(2));
+        User user = new User(0, "user", "user@mail.com");
+        Item item = new Item(0, "item", "descr", true, user, null);
+        Booking booking = new Booking(0, null, null, item, user, BookingStatus.APPROVED);
+        when(bookingService.add(anyInt(), any(BookingDtoIn.class)))
+                .thenReturn(booking);
+
+        mvc.perform(post("/bookings")
+                        .content(mapper.writeValueAsString(bookingDtoIn))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void get() throws Exception {
         User user = new User(0, "user", "user@mail.com");
         Item item = new Item(0, "item", "descr", true, user, null);

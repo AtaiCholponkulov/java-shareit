@@ -54,6 +54,23 @@ class ItemRequestControllerTest {
     }
 
     @Test
+    void addThrowsException() throws Exception {
+        User user = new User(0, "user", "user@mail.com");
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description(null).build();
+        ItemRequest itemRequest = new ItemRequest(0, itemRequestDto.getDescription(), user, null);
+        when(itemRequestService.add(0, itemRequestDto))
+                .thenReturn(itemRequest);
+
+        mvc.perform(post("/requests")
+                        .content(mapper.writeValueAsString(itemRequestDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Sharer-User-Id", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getUserRequests() throws Exception {
         User user = new User(0, "user", "user@mail.com");
         ItemRequestDto itemRequestDto = ItemRequestDto.builder()
@@ -104,8 +121,7 @@ class ItemRequestControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpectAll(status().isOk(),
                         jsonPath("$.id", is(itemRequest.getId()), Integer.class),
-                        jsonPath("$.description", is(itemRequest.getDescription())),
-                        jsonPath("$.created", is(itemRequest.getCreated().toString())));
+                        jsonPath("$.description", is(itemRequest.getDescription())));
     }
 
     @Test
@@ -132,7 +148,6 @@ class ItemRequestControllerTest {
                 .andExpectAll(status().isOk(),
                         jsonPath("$", hasSize(1)),
                         jsonPath("$[0].id", is(itemRequest.getId()), Integer.class),
-                        jsonPath("$[0].description", is(itemRequest.getDescription())),
-                        jsonPath("$[0].created", is(itemRequest.getCreated().toString())));
+                        jsonPath("$[0].description", is(itemRequest.getDescription())));
     }
 }

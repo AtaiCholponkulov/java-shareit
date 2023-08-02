@@ -8,6 +8,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
@@ -50,6 +51,48 @@ class UserControllerTest {
     }
 
     @Test
+    void addUserNoNameThrowsException() throws Exception {
+        User user = new User(0, null, "user@mail.com");
+        when(userService.add(any(User.class)))
+                .thenReturn(user);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(user))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addUserNoEmailThrowsException() throws Exception {
+        User user = new User(0, "name", null);
+        when(userService.add(any(User.class)))
+                .thenReturn(user);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(user))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addUserWrongEmailThrowsException() throws Exception {
+        User user = new User(0, "name", "name@mail");
+        when(userService.add(any(User.class)))
+                .thenReturn(user);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(user))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void get() throws Exception {
         User user = new User(0, "user", "user@mail.com");
         when(userService.get(0))
@@ -80,6 +123,36 @@ class UserControllerTest {
                         jsonPath("$.id", is(user.getId()), Integer.class),
                         jsonPath("$.name", is(user.getName())),
                         jsonPath("$.email", is(user.getEmail())));
+    }
+
+    @Test
+    void updateUserNoUpdateThrowsException() throws Exception {
+        User user = new User(0, null, "user@mail.com");
+        when(userService.update(any(User.class)))
+                .thenReturn(user);
+        UserDto userDto = UserDto.builder().name(null).email(null).build();
+
+        mvc.perform(MockMvcRequestBuilders.patch("/users/0")
+                        .content(mapper.writeValueAsString(userDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateUserWrongEmailThrowsException() throws Exception {
+        User user = new User(0, "name", null);
+        when(userService.update(any(User.class)))
+                .thenReturn(user);
+        UserDto userDto = UserDto.builder().name(null).email("email@com").build();
+
+        mvc.perform(MockMvcRequestBuilders.patch("/users/0")
+                        .content(mapper.writeValueAsString(userDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
