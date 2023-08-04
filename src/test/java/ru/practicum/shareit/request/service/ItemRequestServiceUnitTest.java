@@ -1,9 +1,12 @@
 package ru.practicum.shareit.request.service;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.exception.model.NotFoundException;
@@ -14,8 +17,7 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.service.UserService;
-import ru.practicum.shareit.user.service.UserServiceImpl;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,30 +26,34 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static ru.practicum.shareit.request.mapper.ItemRequestMapper.map;
 
+@ExtendWith(MockitoExtension.class)
 class ItemRequestServiceUnitTest {
 
     @Mock
-    private final UserService userService = Mockito.mock(UserServiceImpl.class);
-    private final ItemRepository itemRepository = Mockito.mock(ItemRepository.class);
-    private final ItemRequestRepository itemRequestRepository = Mockito.mock(ItemRequestRepository.class);
-    private final ItemRequestService itemRequestService = new ItemRequestServiceImpl(userService, itemRepository, itemRequestRepository);
-    private static User requester;
-    private static ItemRequestDto itemRequestDto;
-    private static ItemRequest itemRequest;
+    private UserRepository userRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private ItemRequestRepository itemRequestRepository;
+    @InjectMocks
+    private ItemRequestServiceImpl itemRequestService;
+    private User requester;
+    private ItemRequestDto itemRequestDto;
+    private ItemRequest itemRequest;
 
-    @BeforeAll
-    static void beforeAll() {
+    @BeforeEach
+    void beforeEach() {
         requester = new User(0, "requester", "requester@com");
         itemRequestDto = ItemRequestDto.builder()
-                .description("need item")
+                .description("need male")
                 .build();
         itemRequest = map(itemRequestDto, requester);
     }
 
     @Test
     void add() {
-        Mockito.when(userService.get(requester.getId()))
-                .thenReturn(requester);
+        Mockito.when(userRepository.findById(requester.getId()))
+                .thenReturn(Optional.of(requester));
         Mockito.when(itemRequestRepository.save(Mockito.any(ItemRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -55,6 +61,14 @@ class ItemRequestServiceUnitTest {
         assertEquals(itemRequest.getId(), answer.getId());
         assertEquals(itemRequest.getDescription(), answer.getDescription());
         assertEquals(itemRequest.getRequester().getId(), answer.getRequester().getId());
+    }
+
+    @Test
+    void addThrowsException() {
+        Mockito.when(userRepository.findById(requester.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemRequestService.add(requester.getId(), itemRequestDto));
     }
 
     @Test
@@ -78,9 +92,9 @@ class ItemRequestServiceUnitTest {
 
     @Test
     void getUserRequests() {
-        Mockito.when(userService.get(Mockito.anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(0))
+        Mockito.when(userRepository.findById(Mockito.anyInt()))
+                .thenReturn(Optional.of(requester));
+        Mockito.when(itemRequestRepository.findByRequesterIdOrderByCreatedDesc(0))
                 .thenReturn(List.of(itemRequest));
 
         List<ItemRequestDto> answer = itemRequestService.getUserRequests(0);
@@ -93,9 +107,9 @@ class ItemRequestServiceUnitTest {
     void getItemRequestWithItems() {
         User owner = new User(1, "owner", "owner@com");
         Item item = new Item(0, "item", "description", true, owner, itemRequest);
-        Mockito.when(userService.get(Mockito.anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllByRequestId(Mockito.anyInt()))
+        Mockito.when(userRepository.findById(Mockito.anyInt()))
+                .thenReturn(Optional.of(owner));
+        Mockito.when(itemRepository.findByRequestId(Mockito.anyInt()))
                 .thenReturn(List.of(item));
         Mockito.when(itemRequestRepository.findById(Mockito.anyInt()))
                 .thenReturn(Optional.of(itemRequest));
@@ -110,12 +124,10 @@ class ItemRequestServiceUnitTest {
 
     @Test
     void getRequestsNotOfViewerWithPagination() {
-        Mockito.when(userService.get(requester.getId()))
-                .thenReturn(null);
+        Mockito.when(userRepository.findById(requester.getId()))
+                .thenReturn(Optional.of(requester));
         Mockito.when(itemRequestRepository.findAll(Mockito.any(Pageable.class)))
                 .thenReturn(Page.empty());
-        Mockito.when(itemRequestRepository.findAll())
-                .thenReturn(Collections.emptyList());
 
         List<ItemRequestDto> answer = assertDoesNotThrow(() ->
                 itemRequestService.get(0, 5, requester.getId()));
@@ -124,10 +136,8 @@ class ItemRequestServiceUnitTest {
 
     @Test
     void getRequestsNotOfViewerWithoutPagination() {
-        Mockito.when(userService.get(requester.getId()))
-                .thenReturn(null);
-        Mockito.when(itemRequestRepository.findAll(Mockito.any(Pageable.class)))
-                .thenReturn(Page.empty());
+        Mockito.when(userRepository.findById(requester.getId()))
+                .thenReturn(Optional.of(requester));
         Mockito.when(itemRequestRepository.findAll())
                 .thenReturn(Collections.emptyList());
 
@@ -138,12 +148,8 @@ class ItemRequestServiceUnitTest {
 
     @Test
     void getRequestsNotOfViewerWithPaginationThrowsException() {
-        Mockito.when(userService.get(requester.getId()))
-                .thenReturn(null);
-        Mockito.when(itemRequestRepository.findAll(Mockito.any(Pageable.class)))
-                .thenReturn(Page.empty());
-        Mockito.when(itemRequestRepository.findAll())
-                .thenReturn(Collections.emptyList());
+        Mockito.when(userRepository.findById(requester.getId()))
+                .thenReturn(Optional.of(requester));
 
         assertThrows(ValidationException.class, () ->
                 itemRequestService.get(0, null, requester.getId()));

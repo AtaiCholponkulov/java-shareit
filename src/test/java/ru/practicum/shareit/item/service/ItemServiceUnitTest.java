@@ -1,9 +1,13 @@
 package ru.practicum.shareit.item.service;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
 import ru.practicum.shareit.booking.model.Booking;
@@ -19,11 +23,9 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.request.service.ItemRequestService;
-import ru.practicum.shareit.request.service.ItemRequestServiceImpl;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.service.UserService;
-import ru.practicum.shareit.user.service.UserServiceImpl;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -34,109 +36,34 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 
+@ExtendWith(MockitoExtension.class)
 class ItemServiceUnitTest {
 
-    private final ItemRepository itemRepository = Mockito.mock(ItemRepository.class);
-    private final BookingRepository bookingRepository = Mockito.mock(BookingRepository.class);
-    private final UserService userService = Mockito.mock(UserServiceImpl.class);
-    private final CommentRepository commentRepository = Mockito.mock(CommentRepository.class);
-    private final ItemRequestService itemRequestService = Mockito.mock(ItemRequestServiceImpl.class);
-    private final ItemService itemService = new ItemServiceImpl(itemRepository,
-            bookingRepository,
-            userService,
-            commentRepository,
-            itemRequestService);
-    private static User requestOwner;
-    private static ItemRequest itemRequest;
-    private static User itemOwner;
-    private static Item item;
-    private static LocalDateTime now;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private BookingRepository bookingRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private CommentRepository commentRepository;
+    @Mock
+    private ItemRequestRepository itemRequestRepository;
+    @InjectMocks
+    private ItemServiceImpl itemService;
+    private User requestOwner;
+    private ItemRequest itemRequest;
+    private User itemOwner;
+    private Item item;
+    private LocalDateTime now;
 
-    @BeforeAll
-    static void beforeAll() {
+    @BeforeEach
+    void beforeEach() {
         now = LocalDateTime.now();
         requestOwner = new User(0, "requester", "requester@com");
         itemRequest = new ItemRequest(0, "itemRequest", requestOwner, now.minusMonths(1));
         itemOwner = new User(1, "owner", "owner@com");
         item = new Item(0, "item", "itemDescription", true, itemOwner, itemRequest);
-    }
-
-    @Test
-    void addCommentBookingStatusApproved() {
-        CommentDto commentDto = CommentDto.builder()
-                .id(0)
-                .text("comment")
-                .authorName("author")
-                .build();
-        Booking booking = new Booking(0,
-                now.minusDays(2),
-                now.minusDays(1),
-                item,
-                requestOwner,
-                BookingStatus.APPROVED);
-        int commentatorId = requestOwner.getId();
-
-        Mockito.when(userService.get(commentatorId))
-                .thenReturn(requestOwner);
-        Mockito.when(itemRepository.findById(item.getId()))
-                .thenReturn(Optional.of(item));
-        Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
-                .thenReturn(List.of(booking));
-        Mockito.when(commentRepository.save(any(Comment.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        Comment answerComment = assertDoesNotThrow(() -> itemService.add(commentDto, commentatorId, item.getId()));
-        assertEquals(commentDto.getId(), answerComment.getId());
-        assertEquals(commentatorId, answerComment.getAuthor().getId());
-        assertEquals(item.getId(), answerComment.getItem().getId());
-    }
-
-    @Test
-    void addCommentBookingStatusRejected() {
-        CommentDto commentDto = CommentDto.builder()
-                .id(0)
-                .text("comment")
-                .authorName("author")
-                .build();
-        Booking booking = new Booking(0,
-                now.minusDays(2),
-                now.minusDays(1),
-                item,
-                requestOwner,
-                BookingStatus.REJECTED);
-        int commentatorId = requestOwner.getId();
-
-        Mockito.when(userService.get(commentatorId))
-                .thenReturn(requestOwner);
-        Mockito.when(itemRepository.findById(item.getId()))
-                .thenReturn(Optional.of(item));
-        Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
-                .thenReturn(List.of(booking));
-        Mockito.when(commentRepository.save(any(Comment.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
-    }
-
-    @Test
-    void addCommentEmptyBookingList() {
-        CommentDto commentDto = CommentDto.builder()
-                .id(0)
-                .text("comment")
-                .authorName("author")
-                .build();
-        int commentatorId = requestOwner.getId();
-
-        Mockito.when(userService.get(commentatorId))
-                .thenReturn(requestOwner);
-        Mockito.when(itemRepository.findById(item.getId()))
-                .thenReturn(Optional.of(item));
-        Mockito.when(bookingRepository.findAllByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
-                .thenReturn(Collections.emptyList());
-        Mockito.when(commentRepository.save(any(Comment.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
     }
 
     @Test
@@ -147,13 +74,13 @@ class ItemServiceUnitTest {
                 .description(item.getDescription())
                 .available(true)
                 .build();
-        Mockito.when(userService.get(itemOwner.getId()))
-                .thenReturn(itemOwner);
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(itemOwner));
         Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Item answerItem = itemService.add(itemDto, itemOwner.getId());
-        Mockito.verifyNoInteractions(itemRequestService);
+        Mockito.verifyNoInteractions(itemRequestRepository);
         assertEquals(itemDto.getId(), answerItem.getId());
         assertNull(answerItem.getRequest());
         assertEquals(item.getName(), answerItem.getName());
@@ -170,10 +97,10 @@ class ItemServiceUnitTest {
                 .available(true)
                 .requestId(itemRequest.getId())
                 .build();
-        Mockito.when(userService.get(itemOwner.getId()))
-                .thenReturn(itemOwner);
-        Mockito.when(itemRequestService.get(itemRequest.getId()))
-                .thenReturn(itemRequest);
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(itemOwner));
+        Mockito.when(itemRequestRepository.findById(itemRequest.getId()))
+                .thenReturn(Optional.of(itemRequest));
         Mockito.when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -186,12 +113,44 @@ class ItemServiceUnitTest {
     }
 
     @Test
+    void addItemRequestNotFoundException() {
+        ItemDto itemDto = ItemDto.builder()
+                .id(0)
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(true)
+                .requestId(itemRequest.getId())
+                .build();
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(itemOwner));
+        Mockito.when(itemRequestRepository.findById(itemRequest.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemService.add(itemDto, itemOwner.getId()));
+    }
+
+    @Test
+    void addItemThrowsException() {
+        ItemDto itemDto = ItemDto.builder()
+                .id(0)
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(true)
+                .requestId(itemRequest.getId())
+                .build();
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemService.add(itemDto, itemOwner.getId()));
+    }
+
+    @Test
     void getItemWithBookingsAndComments() {
-        Mockito.when(userService.get(item.getId()))
-                .thenReturn(null);
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(itemOwner));
         Mockito.when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.of(item));
-        Mockito.when(commentRepository.findAllByItemIdOrderByCreatedDesc(item.getId()))
+        Mockito.when(commentRepository.findByItemIdOrderByCreatedDesc(item.getId()))
                 .thenReturn(Collections.emptyList());
         Mockito.when(bookingRepository.findPrevByItemIdAndStatus(
                 anyInt(),
@@ -246,18 +205,16 @@ class ItemServiceUnitTest {
 
     @Test
     void getEmptyViewerItemsWithoutPagination() {
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
-                .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(itemOwner));
+        Mockito.when(itemRepository.findByOwnerIdOrderById(anyInt()))
                 .thenReturn(Collections.emptyList());
 
         assertEquals(0, itemService.getViewerItems(itemOwner.getId(), null, null).size());
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
+                .findByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(1))
-                .findAllByOwnerIdOrderById(anyInt());
+                .findByOwnerIdOrderById(anyInt());
     }
 
     @Test
@@ -269,11 +226,11 @@ class ItemServiceUnitTest {
                 item,
                 requestOwner,
                 BookingStatus.APPROVED);
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(itemOwner));
+        Mockito.when(itemRepository.findByOwnerIdOrderById(anyInt()))
                 .thenReturn(List.of(item));
-        Mockito.when(commentRepository.findAllByItemIdIn(Mockito.anySet()))
+        Mockito.when(commentRepository.findByItemIdIn(Mockito.anySet()))
                 .thenReturn(List.of(comment));
         Mockito.when(bookingRepository.findPrevByItemIdAndStatus(
                 anyInt(),
@@ -284,18 +241,20 @@ class ItemServiceUnitTest {
                 anyInt(),
                 any(BookingStatus.class),
                 any(LocalDateTime.class),
-                any(Pageable.class))).thenReturn(new SliceImpl<>(Collections.emptyList()));
+                any(Pageable.class))).thenReturn(new SliceImpl<>(List.of(booking)));
 
         List<ItemDtoWithBookingsAndComments> result = itemService.getViewerItems(itemOwner.getId(), null, null);
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
+                .findByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(1))
-                .findAllByOwnerIdOrderById(anyInt());
+                .findByOwnerIdOrderById(anyInt());
         assertThat(result, Matchers.hasSize(1));
         assertThat(result.get(0).getId(), Matchers.is(item.getId()));
         assertThat(result.get(0).getName(), Matchers.is(item.getName()));
         assertThat(result.get(0).getAvailable(), Matchers.is(item.getAvailable()));
-        assertThat(result.get(0).getNextBooking(), Matchers.nullValue());
+        assertThat(result.get(0).getNextBooking(), Matchers.notNullValue());
+        assertThat(result.get(0).getNextBooking().getStart(), Matchers.is(booking.getStartDate()));
+        assertThat(result.get(0).getNextBooking().getEnd(), Matchers.is(booking.getEndDate()));
         assertThat(result.get(0).getLastBooking(), Matchers.notNullValue());
         assertThat(result.get(0).getLastBooking().getStart(), Matchers.is(booking.getStartDate()));
         assertThat(result.get(0).getLastBooking().getEnd(), Matchers.is(booking.getEndDate()));
@@ -305,43 +264,35 @@ class ItemServiceUnitTest {
 
     @Test
     void getViewerItemsWithPagination() {
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
-                .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(itemOwner));
+        Mockito.when(itemRepository.findByOwnerIdOrderById(anyInt(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
 
         assertEquals(0, itemService.getViewerItems(itemOwner.getId(), 0, 1).size());
         Mockito.verify(itemRepository, Mockito.times(1))
-                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
+                .findByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(anyInt());
+                .findByOwnerIdOrderById(anyInt());
     }
 
     @Test
     void getViewerItemsThrowsException() {
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt(), any(Pageable.class)))
-                .thenReturn(Collections.emptyList());
-        Mockito.when(itemRepository.findAllByOwnerIdOrderById(anyInt()))
-                .thenReturn(Collections.emptyList());
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(itemOwner));
 
         assertThrows(ValidationException.class, () -> itemService.getViewerItems(itemOwner.getId(), 5, 0));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(anyInt(), any(Pageable.class));
+                .findByOwnerIdOrderById(anyInt(), any(Pageable.class));
         Mockito.verify(itemRepository, Mockito.times(0))
-                .findAllByOwnerIdOrderById(anyInt());
+                .findByOwnerIdOrderById(anyInt());
     }
 
     @Test
     void searchNoPagination() {
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllAvailableItemsByWord(anyString(), any(Pageable.class)))
-                .thenReturn(List.of(item));
-        Mockito.when(itemRepository.findAllAvailableItemsByWord("item"))
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(requestOwner));
+        Mockito.when(itemRepository.findAvailableByWord("item"))
                 .thenReturn(List.of(item));
 
         List<Item> result = itemService.search("item", null, null, requestOwner.getId());
@@ -353,11 +304,9 @@ class ItemServiceUnitTest {
 
     @Test
     void searchWithPagination() {
-        Mockito.when(userService.get(anyInt()))
-                .thenReturn(null);
-        Mockito.when(itemRepository.findAllAvailableItemsByWord(anyString(), any(Pageable.class)))
-                .thenReturn(List.of(item));
-        Mockito.when(itemRepository.findAllAvailableItemsByWord("item"))
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(requestOwner));
+        Mockito.when(itemRepository.findAvailableByWord(anyString(), any(Pageable.class)))
                 .thenReturn(List.of(item));
 
         List<Item> result = itemService.search("item", 0, 1, requestOwner.getId());
@@ -368,6 +317,15 @@ class ItemServiceUnitTest {
     }
 
     @Test
+    void searchWithPaginationEmptySearchText() {
+        Mockito.when(userRepository.findById(anyInt()))
+                .thenReturn(Optional.of(requestOwner));
+
+        List<Item> result = itemService.search("", 0, 1, requestOwner.getId());
+        assertThat(result, Matchers.hasSize(0));
+    }
+
+    @Test
     void update() {
         ItemDto itemDto = ItemDto.builder()
                 .id(item.getId())
@@ -375,8 +333,8 @@ class ItemServiceUnitTest {
                 .description("new description")
                 .available(false)
                 .build();
-        Mockito.when(userService.get(itemOwner.getId()))
-                .thenReturn(itemOwner);
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(itemOwner));
         Mockito.when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.of(item));
         Mockito.when(itemRepository.save(any(Item.class)))
@@ -396,13 +354,85 @@ class ItemServiceUnitTest {
                 .description("new description")
                 .available(false)
                 .build();
-        Mockito.when(userService.get(itemOwner.getId()))
-                .thenReturn(requestOwner);
+        Mockito.when(userRepository.findById(itemOwner.getId()))
+                .thenReturn(Optional.of(requestOwner));
         Mockito.when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.of(item));
-        Mockito.when(itemRepository.save(any(Item.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThrows(NotFoundException.class, () -> itemService.update(item.getId(), itemOwner.getId(), itemDto));
+    }
+
+    @Test
+    void addCommentBookingStatusApproved() {
+        CommentDto commentDto = CommentDto.builder()
+                .id(0)
+                .text("comment")
+                .authorName("author")
+                .build();
+        Booking booking = new Booking(0,
+                now.minusDays(2),
+                now.minusDays(1),
+                item,
+                requestOwner,
+                BookingStatus.APPROVED);
+        int commentatorId = requestOwner.getId();
+
+        Mockito.when(userRepository.findById(commentatorId))
+                .thenReturn(Optional.of(requestOwner));
+        Mockito.when(itemRepository.findById(item.getId()))
+                .thenReturn(Optional.of(item));
+        Mockito.when(bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
+                .thenReturn(List.of(booking));
+        Mockito.when(commentRepository.save(any(Comment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Comment answerComment = assertDoesNotThrow(() -> itemService.add(commentDto, commentatorId, item.getId()));
+        assertEquals(commentDto.getId(), answerComment.getId());
+        assertEquals(commentatorId, answerComment.getAuthor().getId());
+        assertEquals(item.getId(), answerComment.getItem().getId());
+    }
+
+    @Test
+    void addCommentBookingStatusRejected() {
+        CommentDto commentDto = CommentDto.builder()
+                .id(0)
+                .text("comment")
+                .authorName("author")
+                .build();
+        Booking booking = new Booking(0,
+                now.minusDays(2),
+                now.minusDays(1),
+                item,
+                requestOwner,
+                BookingStatus.REJECTED);
+        int commentatorId = requestOwner.getId();
+
+        Mockito.when(userRepository.findById(commentatorId))
+                .thenReturn(Optional.of(requestOwner));
+        Mockito.when(itemRepository.findById(item.getId()))
+                .thenReturn(Optional.of(item));
+        Mockito.when(bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
+                .thenReturn(List.of(booking));
+
+        assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
+    }
+
+    @Test
+    void addCommentEmptyBookingList() {
+        CommentDto commentDto = CommentDto.builder()
+                .id(0)
+                .text("comment")
+                .authorName("author")
+                .build();
+        int commentatorId = requestOwner.getId();
+
+        Mockito.when(userRepository.findById(commentatorId))
+                .thenReturn(Optional.of(requestOwner));
+        Mockito.when(itemRepository.findById(item.getId()))
+                .thenReturn(Optional.of(item));
+        Mockito.when(bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED))
+                .thenReturn(Collections.emptyList());
+
+        assertThrows(ValidationException.class, () -> itemService.add(commentDto, commentatorId, item.getId()));
     }
 }

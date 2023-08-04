@@ -12,25 +12,25 @@ import java.util.Set;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Integer> {
 
-    List<Item> findAllByOwnerIdOrderById(Integer ownerId);
+    List<Item> findByOwnerIdOrderById(Integer ownerId);
 
-    List<Item> findAllByOwnerIdOrderById(Integer ownerId, Pageable pageable);
-
-    @Query("SELECT i " +
-            "FROM Item i " +
-            "WHERE i.available = true " +
-            "AND (LOWER(i.name) LIKE %?1%" +
-            "OR LOWER(i.description) LIKE %?1%)")//db COLLATE and CTYPE settings should be specific to support cyrillic
-    List<Item> findAllAvailableItemsByWord(String word);
+    List<Item> findByOwnerIdOrderById(Integer ownerId, Pageable pageable);
 
     @Query("SELECT i " +
             "FROM Item i " +
             "WHERE i.available = true " +
             "AND (LOWER(i.name) LIKE %?1%" +
             "OR LOWER(i.description) LIKE %?1%)")//db COLLATE and CTYPE settings should be specific to support cyrillic
-    List<Item> findAllAvailableItemsByWord(String word, Pageable pageable);
+    List<Item> findAvailableByWord(String word);
 
-    List<Item> findAllByRequestId(Integer requestId);
+    @Query("SELECT i " +
+            "FROM Item i " +
+            "WHERE i.available = true " +
+            "AND (LOWER(i.name) LIKE %?1%" +
+            "OR LOWER(i.description) LIKE %?1%)")//db COLLATE and CTYPE settings should be specific to support cyrillic
+    List<Item> findAvailableByWord(String word, Pageable pageable);
 
-    List<Item> findAllByRequestIdIn(Set<Integer> requestIds);
+    List<Item> findByRequestId(Integer requestId);
+
+    List<Item> findByRequestIdIn(Set<Integer> requestIds);
 }

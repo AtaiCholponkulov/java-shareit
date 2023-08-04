@@ -38,11 +38,14 @@ public class Item {
     private ItemRequest request;
 
     public void update(Item item) {
-        if (item.getName() != null)
+        if (item.getName() != null) {
             this.setName(item.getName());
-        if (item.getDescription() != null)
+        }
+        if (item.getDescription() != null) {
             this.setDescription(item.getDescription());
-        if (item.getAvailable() != null)
+        }
+        if (item.getAvailable() != null) {
             this.setAvailable(item.getAvailable());
+        }
     }
 }

@@ -4,26 +4,27 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.support.TransactionTemplate;
 import ru.practicum.shareit.exception.model.NotFoundException;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBootTest(
         properties = "db.name=test",
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class UserServiceIntegrationTest {
 
+    private final TransactionTemplate tm;
     private final EntityManager em;
     private final UserService userService;
 
@@ -44,8 +45,11 @@ class UserServiceIntegrationTest {
 
     @Test
     void get() {
-        User user = userService.add(new User(null, "user", "user@mail.com"));
-        em.detach(user);
+        User user = new User(null, "user", "user@mail.com");
+        tm.execute(status -> {
+            em.persist(user);
+            return 1;
+        });
 
         User dbUser = userService.get(user.getId());
 

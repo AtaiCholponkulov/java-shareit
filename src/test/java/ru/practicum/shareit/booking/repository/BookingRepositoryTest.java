@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.repository;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -12,10 +13,9 @@ import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.UserRepository;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class BookingRepositoryTest {
 
-    private final UserRepository userRepository;
-    private final ItemRepository itemRepository;
+    private final EntityManager em;
     private final BookingRepository bookingRepository;
     private User user1;
     private User user2;
@@ -40,9 +39,24 @@ class BookingRepositoryTest {
     private Booking booking3;
     private final LocalDateTime now = LocalDateTime.now();
 
-    @Test
-    void test() {
-        setUp();
+    @BeforeEach
+    public void beforeEach() {
+        user1 = new User(null, "user1", "user1@com");
+        user2 = new User(null, "user2", "user2@com");
+        user3 = new User(null, "user3", "user3@com");
+        em.persist(user1);
+        em.persist(user2);
+        em.persist(user3);
+        item1 = new Item(null, "item1", "descr", true, user2, null);
+        item2 = new Item(null, "item2", "descr", false, user3, null);
+        item3 = new Item(null, "item3", "descr", true, user3, null);
+        em.persist(item1);
+        em.persist(item2);
+        em.persist(item3);
+        booking1 = new Booking(null, now.minusDays(5), now.minusDays(2), item1, user3, BookingStatus.APPROVED);
+        booking2 = new Booking(null, now.plusDays(1), now.plusDays(3), item2, user1, BookingStatus.APPROVED);
+        booking3 = new Booking(null, now.minusDays(15), now.minusDays(4), item3, user2, BookingStatus.REJECTED);
+        bookingRepository.saveAll(List.of(booking1, booking2, booking3));
         assertNotNull(user1.getId());
         assertNotNull(user2.getId());
         assertNotNull(user3.getId());
@@ -56,10 +70,9 @@ class BookingRepositoryTest {
 
     @Test
     void findAllByBookerIdWithPagination() {
-        setUp();
         Pageable page = PageRequest.of(0, 1, Sort.by("endDate").descending());
 
-        List<Booking> user1Bookings = bookingRepository.findAllByBookerId(user1.getId(), page);
+        List<Booking> user1Bookings = bookingRepository.findByBookerId(user1.getId(), page);
         assertEquals(1, user1Bookings.size());
         assertEquals(booking2.getId(), user1Bookings.get(0).getId());
         assertEquals(booking2.getStatus(), user1Bookings.get(0).getStatus());
@@ -70,9 +83,7 @@ class BookingRepositoryTest {
 
     @Test
     void findAllByBookerIdOrderByEndDateDescNoPagination() {
-        setUp();
-
-        List<Booking> user2Bookings = bookingRepository.findAllByBookerIdOrderByEndDateDesc(user2.getId());
+        List<Booking> user2Bookings = bookingRepository.findByBookerIdOrderByEndDateDesc(user2.getId());
         assertEquals(1, user2Bookings.size());
         assertEquals(booking3.getId(), user2Bookings.get(0).getId());
         assertEquals(booking3.getStatus(), user2Bookings.get(0).getStatus());
@@ -83,10 +94,9 @@ class BookingRepositoryTest {
 
     @Test
     void findAllByBookingItemOwnerIdWithPagination() {
-        setUp();
         Pageable page = PageRequest.of(0, 5);
 
-        List<Booking> bookingsOfUser3Items = bookingRepository.findAllByBookingItemOwnerId(user3.getId(), page);
+        List<Booking> bookingsOfUser3Items = bookingRepository.findByOwnerId(user3.getId(), page);
         assertEquals(2, bookingsOfUser3Items.size());
         assertEquals(booking2.getId(), bookingsOfUser3Items.get(0).getId());
         assertEquals(booking2.getStatus(), bookingsOfUser3Items.get(0).getStatus());
@@ -102,9 +112,7 @@ class BookingRepositoryTest {
 
     @Test
     void findAllByBookingItemOwnerIdNoPagination() {
-        setUp();
-
-        List<Booking> bookingsOfUser3Items = bookingRepository.findAllByBookingItemOwnerId(user3.getId());
+        List<Booking> bookingsOfUser3Items = bookingRepository.findByOwnerId(user3.getId());
         assertEquals(2, bookingsOfUser3Items.size());
         assertEquals(booking2.getId(), bookingsOfUser3Items.get(0).getId());
         assertEquals(booking2.getStatus(), bookingsOfUser3Items.get(0).getStatus());
@@ -120,10 +128,8 @@ class BookingRepositoryTest {
 
     @Test
     void findAllByItemIdAndStatus() {
-        setUp();
-
         List<Booking> approvedBookingsOfItem1 = bookingRepository
-                .findAllByItemIdAndStatus(item1.getId(), BookingStatus.APPROVED);
+                .findByItemIdAndStatus(item1.getId(), BookingStatus.APPROVED);
         assertEquals(1, approvedBookingsOfItem1.size());
         assertEquals(booking1.getId(), approvedBookingsOfItem1.get(0).getId());
         assertEquals(booking1.getStatus(), approvedBookingsOfItem1.get(0).getStatus());
@@ -134,7 +140,6 @@ class BookingRepositoryTest {
 
     @Test
     void findNextByItemIdAndStatus() {
-        setUp();
         Pageable page = PageRequest.of(0, 1);
 
         Slice<Booking> result = bookingRepository
@@ -150,7 +155,6 @@ class BookingRepositoryTest {
 
     @Test
     void findPrevByItemIdAndStatus() {
-        setUp();
         Pageable page = PageRequest.of(0, 1);
 
         Slice<Booking> result = bookingRepository
@@ -162,20 +166,5 @@ class BookingRepositoryTest {
         assertEquals(booking3.getStatus(), nextApprovedBookingOfItem3.getStatus());
         assertEquals(booking3.getItem().getName(), nextApprovedBookingOfItem3.getItem().getName());
         assertEquals(booking3.getBooker().getName(), nextApprovedBookingOfItem3.getBooker().getName());
-    }
-
-    private void setUp() {
-        user1 = new User(null, "user1", "user1@com");
-        user2 = new User(null, "user2", "user2@com");
-        user3 = new User(null, "user3", "user3@com");
-        userRepository.saveAll(List.of(user1, user2, user3));
-        item1 = new Item(null, "item1", "descr", true, user2, null);
-        item2 = new Item(null, "item2", "descr", false, user3, null);
-        item3 = new Item(null, "item3", "descr", true, user3, null);
-        itemRepository.saveAll(List.of(item1, item2, item3));
-        booking1 = new Booking(null, now.minusDays(5), now.minusDays(2), item1, user3, BookingStatus.APPROVED);
-        booking2 = new Booking(null, now.plusDays(1), now.plusDays(3), item2, user1, BookingStatus.APPROVED);
-        booking3 = new Booking(null, now.minusDays(15), now.minusDays(4), item3, user2, BookingStatus.REJECTED);
-        bookingRepository.saveAll(List.of(booking1, booking2, booking3));
     }
 }

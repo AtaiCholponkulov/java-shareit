@@ -16,12 +16,12 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import javax.persistence.EntityManager;
-
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @SpringBootTest(
@@ -38,7 +38,7 @@ class ItemRequestServiceIntegrationTest {
     @Test
     void add() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need look").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         ItemRequest dbItemRequest = em
@@ -54,7 +54,7 @@ class ItemRequestServiceIntegrationTest {
     @Test
     void get() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need good").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         ItemRequest dbItemRequest = assertDoesNotThrow(() -> service.get(itemRequest.getId()));
@@ -67,7 +67,7 @@ class ItemRequestServiceIntegrationTest {
     @Test
     void getNotFound() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need food").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         assertThrows(NotFoundException.class, () -> service.get(10));
@@ -77,7 +77,7 @@ class ItemRequestServiceIntegrationTest {
     void getUserRequests() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
         User user2 = userService.add(new User(null, "user2", "user2@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need dog").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         Item item = itemService.add(
@@ -103,7 +103,7 @@ class ItemRequestServiceIntegrationTest {
     void testGet() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
         User user2 = userService.add(new User(null, "user2", "user2@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need fog").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         Item item = itemService.add(
@@ -129,7 +129,7 @@ class ItemRequestServiceIntegrationTest {
     void getOthersRequestsThrowsPaginationException() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
         User user2 = userService.add(new User(null, "user2", "user2@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need rogue").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         Item item = itemService.add(
@@ -148,7 +148,7 @@ class ItemRequestServiceIntegrationTest {
     void getOthersRequestsNoPagination() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
         User user2 = userService.add(new User(null, "user2", "user2@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need man").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         Item item = itemService.add(
@@ -174,7 +174,7 @@ class ItemRequestServiceIntegrationTest {
     void getOthersRequestsWithPagination() {
         User user1 = userService.add(new User(null, "user1", "user1@mail.com"));
         User user2 = userService.add(new User(null, "user2", "user2@mail.com"));
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need item").build();
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().description("need guy").build();
         ItemRequest itemRequest = service.add(user1.getId(), itemRequestDto);
         em.detach(itemRequest);
         Item item = itemService.add(

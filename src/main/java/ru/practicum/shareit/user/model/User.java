@@ -23,9 +23,11 @@ public class User {
     private String email;
 
     public void update(User user) {
-        if (user.getName() != null)
+        if (user.getName() != null) {
             this.setName(user.getName());
-        if (user.getEmail() != null)
+        }
+        if (user.getEmail() != null) {
             this.setEmail(user.getEmail());
+        }
     }
 }

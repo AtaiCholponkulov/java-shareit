@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     end_date TIMESTAMP,
     item_id BIGINT REFERENCES items(id),
     booker_id BIGINT REFERENCES users(id),
-    status int
+    status varchar(20)
 );
 
 CREATE TABLE IF NOT EXISTS comments (

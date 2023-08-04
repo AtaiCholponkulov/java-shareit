@@ -7,8 +7,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.UserRepository;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,17 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ItemRequestRepositoryTest {
 
     private final ItemRequestRepository itemRequestRepository;
-    private final UserRepository userRepository;
+    private final EntityManager em;
 
     @Test
     void findAllByRequesterIdOrderByCreatedDesc() {
         User requester = new User(null, "requester", "requester@com");
-        userRepository.save(requester);
+        em.persist(requester);
         assertNotNull(requester.getId());
-        ItemRequest request = new ItemRequest(null, "need item", requester, LocalDateTime.now());
+        ItemRequest request = new ItemRequest(null, "need book", requester, LocalDateTime.now());
         itemRequestRepository.save(request);
         assertNotNull(request.getId());
-        List<ItemRequest> answer = itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(requester.getId());
+        List<ItemRequest> answer = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(requester.getId());
         assertEquals(1, answer.size());
         assertEquals(request.getId(), answer.get(0).getId());
         assertEquals(request.getDescription(), answer.get(0).getDescription());

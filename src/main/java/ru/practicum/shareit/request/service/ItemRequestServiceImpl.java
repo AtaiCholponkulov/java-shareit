@@ -15,7 +15,7 @@ import ru.practicum.shareit.request.mapper.ItemRequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,14 +32,14 @@ import static ru.practicum.shareit.validator.Validator.isForPagination;
 @Transactional(readOnly = true)
 public class ItemRequestServiceImpl implements ItemRequestService {
 
-    private final UserService userService;
+    private final UserRepository userRepository;
     private final ItemRepository itemRepository;
     private final ItemRequestRepository itemRequestRepository;
 
     @Transactional
     @Override
     public ItemRequest add(int requesterId, ItemRequestDto itemRequestDto) {
-        User requester = userService.get(requesterId);
+        User requester = getUser(requesterId);
         ItemRequest itemRequest = map(itemRequestDto, requester);
         return itemRequestRepository.save(itemRequest);
     }
@@ -52,8 +52,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> getUserRequests(int viewerId) {
-        userService.get(viewerId);
-        List<ItemRequestDto> requestList = itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(viewerId)
+        getUser(viewerId);
+        List<ItemRequestDto> requestList = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(viewerId)
                 .stream()
                 .map(ItemRequestMapper::map)
                 .collect(Collectors.toList());
@@ -62,9 +62,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestDto get(int viewerId, int requestId) {
-        userService.get(viewerId);
+        getUser(viewerId);
         ItemRequestDto request = map(get(requestId));
-        List<ItemDto> items = itemRepository.findAllByRequestId(requestId)
+        List<ItemDto> items = itemRepository.findByRequestId(requestId)
                 .stream()
                 .map(ItemMapper::map)
                 .collect(Collectors.toList());
@@ -74,7 +74,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> get(Integer from, Integer size, int viewerId) {
-        userService.get(viewerId);
+        getUser(viewerId);
         List<ItemRequest> requestList;
         if (isForPagination(from, size)) {
             Pageable page = PageRequest.of(from, size, Sort.by(Sort.Direction.DESC, "created"));
@@ -82,7 +82,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         } else {
             requestList = itemRequestRepository.findAll();
         }
-        if (requestList.isEmpty()) return new ArrayList<>();
+        if (requestList.isEmpty()) {
+            return new ArrayList<>();
+        }
         List<ItemRequestDto> requestDtoList = requestList.stream()
                 .filter(itemRequest -> itemRequest.getRequester().getId() != viewerId)
                 .map(ItemRequestMapper::map)
@@ -90,10 +92,15 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         return addItems(requestDtoList);
     }
 
+    private User getUser(int userId) {
+        return userRepository.findById(userId).orElseThrow(() ->
+                new NotFoundException("Такого пользователя нет в базе id=" + userId));
+    }
+
     private List<ItemRequestDto> addItems(List<ItemRequestDto> requestList) {
         Map<Integer, ItemRequestDto> requestMap = requestList.stream()
                 .collect(Collectors.toMap(ItemRequestDto::getId, Function.identity()));
-        Map<Integer, List<ItemDto>> itemMap = itemRepository.findAllByRequestIdIn(requestMap.keySet())
+        Map<Integer, List<ItemDto>> itemMap = itemRepository.findByRequestIdIn(requestMap.keySet())
                 .stream()
                 .map(ItemMapper::map)
                 .collect(Collectors.groupingBy(ItemDto::getRequestId));
