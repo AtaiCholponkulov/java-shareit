@@ -113,31 +113,32 @@ class ItemRepositoryTest {
 
     @Test
     void findAllAvailableItemsByWordWithPagination() {
-        Pageable page = PageRequest.of(1, 1, Sort.by(Sort.Direction.ASC, "id"));
+        Item book = new Item(null, "book", "descr", true, user2, itemRequest1);
+        itemRepository.save(book);
+        Pageable page = PageRequest.of(0, 1, Sort.by(Sort.Direction.ASC, "id"));
 
-        List<Item> searchResults = itemRepository.findAvailableByWord("item", page)
+        List<Item> searchResults = itemRepository.findAvailableByWord("book", page)
                 .stream()
                 .sorted(Comparator.comparingInt(Item::getId))
                 .collect(Collectors.toList());
         assertEquals(1, searchResults.size());
-        assertEquals(item3.getId(), searchResults.get(0).getId());
-        assertEquals(item3.getDescription(), searchResults.get(0).getDescription());
-        assertEquals(item3.getOwner().getName(), searchResults.get(0).getOwner().getName());
+        assertEquals(book.getId(), searchResults.get(0).getId());
+        assertEquals(book.getDescription(), searchResults.get(0).getDescription());
+        assertEquals(book.getOwner().getName(), searchResults.get(0).getOwner().getName());
     }
 
     @Test
     void findAllAvailableItemsByWordNoPagination() {
-        List<Item> searchResults = itemRepository.findAvailableByWord("item")
+        Item book = new Item(null, "book", "descr", true, user2, itemRequest1);
+        itemRepository.save(book);
+        List<Item> searchResults = itemRepository.findAvailableByWord("book")
                 .stream()
                 .sorted(Comparator.comparingInt(Item::getId))
                 .collect(Collectors.toList());
-        assertEquals(2, searchResults.size());
-        assertEquals(item1.getId(), searchResults.get(0).getId());
-        assertEquals(item1.getDescription(), searchResults.get(0).getDescription());
-        assertEquals(item1.getOwner().getName(), searchResults.get(0).getOwner().getName());
-        assertEquals(item3.getId(), searchResults.get(1).getId());
-        assertEquals(item3.getDescription(), searchResults.get(1).getDescription());
-        assertEquals(item3.getOwner().getName(), searchResults.get(1).getOwner().getName());
+        assertEquals(1, searchResults.size());
+        assertEquals(book.getId(), searchResults.get(0).getId());
+        assertEquals(book.getDescription(), searchResults.get(0).getDescription());
+        assertEquals(book.getOwner().getName(), searchResults.get(0).getOwner().getName());
     }
 
     @Test
