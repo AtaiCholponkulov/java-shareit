@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
@@ -32,12 +33,19 @@ public class Item {
     @JsonIgnore
     private User owner;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "request_id")
+    private ItemRequest request;
+
     public void update(Item item) {
-        if (item.getName() != null)
+        if (item.getName() != null) {
             this.setName(item.getName());
-        if (item.getDescription() != null)
+        }
+        if (item.getDescription() != null) {
             this.setDescription(item.getDescription());
-        if (item.getAvailable() != null)
+        }
+        if (item.getAvailable() != null) {
             this.setAvailable(item.getAvailable());
+        }
     }
 }

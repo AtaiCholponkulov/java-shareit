@@ -22,9 +22,9 @@ public interface ItemService {
 
     Item get(int itemId);
 
-    List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId);
+    List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId, Integer from, Integer size);
 
-    List<Item> search(String word, int viewerId);
+    List<Item> search(String word, Integer from, Integer size, int viewerId);
 
     @Transactional
     Item update(int itemId, int ownerId, ItemDto itemDto);
