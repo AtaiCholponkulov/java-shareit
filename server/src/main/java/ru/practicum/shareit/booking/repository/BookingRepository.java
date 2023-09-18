@@ -126,7 +126,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
     List<Booking> findByItemIdAndStatus(Integer itemId, BookingStatus status);
 
-    Optional<Booking> findFirstByItemIdAndStatusAndEndDateAfterOrderByStartDateAsc(Integer itemId, BookingStatus status, LocalDateTime moment);
+    Optional<Booking> findFirstByItemIdAndStatusAndStartDateAfterOrderByStartDateAsc(Integer itemId, BookingStatus status, LocalDateTime moment);
 
     Optional<Booking> findFirstByItemIdAndStatusAndStartDateBeforeOrderByEndDateDesc(Integer itemId, BookingStatus status, LocalDateTime moment);
 }

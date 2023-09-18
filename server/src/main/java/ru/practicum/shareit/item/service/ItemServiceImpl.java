@@ -141,7 +141,7 @@ public class ItemServiceImpl implements ItemService {
 
     private void setItemDtoLastAndNextBooking(ItemDtoWithBookingsAndComments itemDto, LocalDateTime now) {
         Optional<Booking> last = bookingRepository.findFirstByItemIdAndStatusAndStartDateBeforeOrderByEndDateDesc(itemDto.getId(), BookingStatus.APPROVED, now);
-        Optional<Booking> next = bookingRepository.findFirstByItemIdAndStatusAndEndDateAfterOrderByStartDateAsc(itemDto.getId(), BookingStatus.APPROVED, now);
+        Optional<Booking> next = bookingRepository.findFirstByItemIdAndStatusAndStartDateAfterOrderByStartDateAsc(itemDto.getId(), BookingStatus.APPROVED, now);
         last.ifPresent(booking -> itemDto.setLastBooking(mapToItemField(booking)));
         next.ifPresent(booking -> itemDto.setNextBooking(mapToItemField(booking)));
     }
