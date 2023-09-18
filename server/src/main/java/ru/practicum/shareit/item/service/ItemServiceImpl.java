@@ -116,11 +116,12 @@ public class ItemServiceImpl implements ItemService {
         if (word.isBlank()) {
             return new ArrayList<>();
         }
+        word = word.toLowerCase();
         if (isForPagination(from, size)) {
             Pageable page = PageRequest.of(from, size, Sort.unsorted());
-            return itemRepository.findAvailableByWord(word.toLowerCase(), page);
+            return itemRepository.findAllByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(word, word, page);
         } else {
-            return itemRepository.findAvailableByWord(word.toLowerCase());
+            return itemRepository.findAllByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(word, word);
         }
     }
 

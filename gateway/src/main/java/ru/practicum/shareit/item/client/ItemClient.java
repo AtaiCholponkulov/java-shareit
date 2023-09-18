@@ -57,10 +57,10 @@ public class ItemClient extends BaseClient {
                     "size", size,
                     "text", text
             );
-            return get("?text={text}&from={from}&size={size}", viewerId, parameters);
+            return get("/search?text={text}&from={from}&size={size}", viewerId, parameters);
         }
         parameters = Map.of("text", text);
-        return get("?text={text}", viewerId, parameters);
+        return get("/search?text={text}", viewerId, parameters);
     }
 
     public ResponseEntity<Object> updateItem(int itemId, int ownerId, ItemDto itemDto) {
