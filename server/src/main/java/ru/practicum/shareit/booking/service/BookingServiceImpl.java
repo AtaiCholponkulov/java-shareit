@@ -10,8 +10,8 @@ import ru.practicum.shareit.booking.dto.BookingDtoIn;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.model.BadRequestException;
 import ru.practicum.shareit.exception.model.NotFoundException;
-import ru.practicum.shareit.exception.model.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.map;
-import static ru.practicum.shareit.validator.Validator.isForPagination;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +37,7 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemRepository.findById(bookingDtoIn.getItemId()).orElseThrow(() ->
                 new NotFoundException("Такой вещи нет в базе id=" + bookingDtoIn.getItemId()));
         if (!item.getAvailable()) {
-            throw new ValidationException("Вещь не доступна id=" + item.getId());
+            throw new BadRequestException("Вещь не доступна id=" + item.getId());
         }
         if (item.getOwner().getId() == bookerId) {
             throw new NotFoundException("Вещь не доступна id=" + item.getId());
@@ -77,7 +76,7 @@ public class BookingServiceImpl implements BookingService {
                     " не является владельцем вещи id=" + booking.getItem().getId());
         }
         if (booking.getStatus().equals(BookingStatus.APPROVED)) {
-            throw new ValidationException("Бронь id=" + bookingId + " уже одобрена");
+            throw new BadRequestException("Бронь id=" + bookingId + " уже одобрена");
         }
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
         return bookingRepository.save(booking);
@@ -87,7 +86,7 @@ public class BookingServiceImpl implements BookingService {
     public List<Booking> getUserBookings(int viewerId, Integer from, Integer size, String state) {
         getUser(viewerId);
         LocalDateTime now = LocalDateTime.now();
-        if (isForPagination(from, size)) {
+        if (from != null && size != null) {
             List<Booking> userBookings;
             Pageable page = PageRequest.of(0, from + size, Sort.by("endDate").descending());
             switch (state) {
@@ -109,7 +108,7 @@ public class BookingServiceImpl implements BookingService {
                     userBookings = bookingRepository.findByBookerIdAndStatus(viewerId, BookingStatus.valueOf(state), page);
                     break;
                 default:
-                    throw new ValidationException("Unknown state: " + state);
+                    throw new BadRequestException("Unknown state: " + state);
             }
             return userBookings.subList(from, userBookings.size());
         } else {
@@ -127,7 +126,7 @@ public class BookingServiceImpl implements BookingService {
                 case "APPROVED":
                     return bookingRepository.findByBookerIdAndStatusOrderByEndDateDesc(viewerId, BookingStatus.valueOf(state));
                 default:
-                    throw new ValidationException("Unknown state: " + state);
+                    throw new BadRequestException("Unknown state: " + state);
             }
         }
     }
@@ -136,7 +135,7 @@ public class BookingServiceImpl implements BookingService {
     public List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state) {
         getUser(viewerId);
         LocalDateTime now = LocalDateTime.now();
-        if (isForPagination(from, size)) {
+        if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size);
             switch (state) {
                 case "ALL":
@@ -152,7 +151,7 @@ public class BookingServiceImpl implements BookingService {
                 case "APPROVED":
                     return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state), page);
                 default:
-                    throw new ValidationException("Unknown state: " + state);
+                    throw new BadRequestException("Unknown state: " + state);
             }
         } else {
             switch (state) {
@@ -169,7 +168,7 @@ public class BookingServiceImpl implements BookingService {
                 case "APPROVED":
                     return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state));
                 default:
-                    throw new ValidationException("Unknown state: " + state);
+                    throw new BadRequestException("Unknown state: " + state);
             }
         }
     }

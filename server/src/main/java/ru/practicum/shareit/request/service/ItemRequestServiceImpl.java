@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.request.mapper.ItemRequestMapper.map;
-import static ru.practicum.shareit.validator.Validator.isForPagination;
 
 @Service
 @RequiredArgsConstructor
@@ -76,7 +75,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public List<ItemRequestDto> get(Integer from, Integer size, int viewerId) {
         getUser(viewerId);
         List<ItemRequest> requestList;
-        if (isForPagination(from, size)) {
+        if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size, Sort.by(Sort.Direction.DESC, "created"));
             requestList = itemRequestRepository.findAll(page).getContent();
         } else {

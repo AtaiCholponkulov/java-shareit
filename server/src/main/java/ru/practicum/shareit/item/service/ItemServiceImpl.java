@@ -4,14 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.model.BadRequestException;
 import ru.practicum.shareit.exception.model.NotFoundException;
-import ru.practicum.shareit.exception.model.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBookingsAndComments;
@@ -32,7 +33,6 @@ import java.util.stream.Collectors;
 import static ru.practicum.shareit.booking.mapper.BookingMapper.mapToItemField;
 import static ru.practicum.shareit.item.mapper.CommentMapper.map;
 import static ru.practicum.shareit.item.mapper.ItemMapper.map;
-import static ru.practicum.shareit.validator.Validator.isForPagination;
 
 @Service
 @RequiredArgsConstructor
@@ -86,7 +86,7 @@ public class ItemServiceImpl implements ItemService {
         getUser(viewerId);
         LocalDateTime now = LocalDateTime.now();
         List<Item> itemList;
-        if (isForPagination(from, size)) {
+        if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size, Sort.by(Sort.Direction.ASC, "id"));
             itemList = itemRepository.findByOwnerIdOrderById(viewerId, page);
         } else {
@@ -117,11 +117,11 @@ public class ItemServiceImpl implements ItemService {
             return new ArrayList<>();
         }
         word = word.toLowerCase();
-        if (isForPagination(from, size)) {
+        if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size, Sort.unsorted());
-            return itemRepository.findAllByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(word, word, page);
+            return itemRepository.findAvailableItemsByWord(word, page);
         } else {
-            return itemRepository.findAllByNameOrDescriptionContainingIgnoreCaseAndAvailableTrue(word, word);
+            return itemRepository.findAvailableItemsByWord(word);
         }
     }
 
@@ -140,10 +140,15 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private void setItemDtoLastAndNextBooking(ItemDtoWithBookingsAndComments itemDto, LocalDateTime now) {
-        Optional<Booking> last = bookingRepository.findFirstByItemIdAndStatusAndStartDateBeforeOrderByEndDateDesc(itemDto.getId(), BookingStatus.APPROVED, now);
-        Optional<Booking> next = bookingRepository.findFirstByItemIdAndStatusAndStartDateAfterOrderByStartDateAsc(itemDto.getId(), BookingStatus.APPROVED, now);
-        last.ifPresent(booking -> itemDto.setLastBooking(mapToItemField(booking)));
-        next.ifPresent(booking -> itemDto.setNextBooking(mapToItemField(booking)));
+        Pageable page = PageRequest.of(0, 1);
+        Slice<Booking> last = bookingRepository.findPrevByItemIdAndStatus(itemDto.getId(), BookingStatus.APPROVED, now, page);
+        Slice<Booking> next = bookingRepository.findNextByItemIdAndStatus(itemDto.getId(), BookingStatus.APPROVED, now, page);
+        if (last.hasContent()) {
+            itemDto.setLastBooking(mapToItemField(last.getContent().get(0)));
+        }
+        if (next.hasContent()) {
+            itemDto.setNextBooking(mapToItemField(next.getContent().get(0)));
+        }
     }
 
     //-----------------------------------------------COMMENT METHODS----------------------------------------------------
@@ -161,7 +166,7 @@ public class ItemServiceImpl implements ItemService {
                         && booking.getEndDate().isBefore(now)
                         && booking.getStatus().equals(BookingStatus.APPROVED));
         if (!isOkay) {
-            throw new ValidationException("Запрос не прошел проверки");
+            throw new BadRequestException("Запрос не прошел проверки");
         }
         Comment comment = map(commentDto, item, commentator);
         return commentRepository.save(comment);
