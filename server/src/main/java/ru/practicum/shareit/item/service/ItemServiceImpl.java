@@ -45,6 +45,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final ItemRequestRepository itemRequestRepository;
+    private LocalDateTime moment;
 
     //------------------------------------------------ITEM METHODS------------------------------------------------------
 
@@ -53,24 +54,23 @@ public class ItemServiceImpl implements ItemService {
     public Item add(ItemDto itemDto, int ownerId) {
         User owner = getUser(ownerId);
         Integer requestId = itemDto.getRequestId();
-        ItemRequest itemRequest = null;
-        if (requestId != null) {
-            itemRequest = itemRequestRepository.findById(requestId).orElseThrow(() ->
-                    new NotFoundException("Такого запроса нет в базе id=" + requestId));
-        }
+        ItemRequest itemRequest = requestId == null
+                ? null
+                : itemRequestRepository.findById(requestId).orElseThrow(() ->
+                new NotFoundException("Такого запроса нет в базе id=" + requestId));
         Item item = map(itemDto, owner, itemRequest);
         return itemRepository.save(item);
     }
 
     @Override
     public ItemDtoWithBookingsAndComments get(int itemId, int viewerId) {
-        LocalDateTime now = LocalDateTime.now();
+        moment = LocalDateTime.now();
         getUser(viewerId);
         Item dbItem = this.get(itemId);
         List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(itemId);
         ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(comments));
         if (viewerId == dbItem.getOwner().getId()) {
-            setItemDtoLastAndNextBooking(itemDto, now);
+            setItemDtoLastAndNextBooking(itemDto, moment);
         }
         return itemDto;
     }
@@ -84,7 +84,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId, Integer from, Integer size) {
         getUser(viewerId);
-        LocalDateTime now = LocalDateTime.now();
+        moment = LocalDateTime.now();
         List<Item> itemList;
         if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size, Sort.by(Sort.Direction.ASC, "id"));
@@ -104,7 +104,7 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(dbItem -> {
                     ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(commentMap.getOrDefault(dbItem.getId(), Collections.emptyList())));
-                    setItemDtoLastAndNextBooking(itemDto, now);
+                    setItemDtoLastAndNextBooking(itemDto, moment);
                     return itemDto;
                 })
                 .collect(Collectors.toList());
@@ -156,14 +156,14 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @Override
     public Comment add(CommentDto commentDto, int commentatorId, int itemId) {
-        LocalDateTime now = LocalDateTime.now();
-        commentDto.setCreated(now);
+        moment = LocalDateTime.now();
+        commentDto.setCreated(moment);
         User commentator = getUser(commentatorId);
         Item item = this.get(itemId);
         List<Booking> itemBookings = bookingRepository.findByItemIdAndStatus(itemId, BookingStatus.APPROVED);
         boolean isOkay = itemBookings.stream().anyMatch(
                 booking -> booking.getBooker().getId() == commentatorId
-                        && booking.getEndDate().isBefore(now)
+                        && booking.getEndDate().isBefore(moment)
                         && booking.getStatus().equals(BookingStatus.APPROVED));
         if (!isOkay) {
             throw new BadRequestException("Запрос не прошел проверки");

@@ -70,7 +70,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public Booking update(int viewerId, boolean approved, int bookingId) {
         getUser(viewerId);
-        Booking booking = this.get(bookingId);
+        Booking booking = get(bookingId);
         if (booking.getItem().getOwner().getId() != viewerId) {
             throw new NotFoundException("Пользователь id=" + viewerId +
                     " не является владельцем вещи id=" + booking.getItem().getId());
