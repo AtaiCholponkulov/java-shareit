@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
 import ru.practicum.shareit.booking.dto.BookingDtoOut;
+import ru.practicum.shareit.booking.filter.BookingFilter;
 import ru.practicum.shareit.booking.service.BookingService;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class BookingController {
     public List<BookingDtoOut> getUserBookings(@RequestHeader(name = X_SHARER_USER_ID) int viewerId,
                                                @RequestParam(required = false) Integer from,
                                                @RequestParam(required = false) Integer size,
-                                               @RequestParam(defaultValue = "ALL") String state) {
+                                               @RequestParam(defaultValue = "ALL") BookingFilter state) {
         return map(bookingService.getUserBookings(viewerId, from, size, state));
     }
 
@@ -49,7 +50,7 @@ public class BookingController {
     public List<BookingDtoOut> getBookingsOfUserItems(@RequestHeader(name = X_SHARER_USER_ID) int viewerId,
                                                       @RequestParam(required = false) Integer from,
                                                       @RequestParam(required = false) Integer size,
-                                                      @RequestParam(defaultValue = "ALL") String state) {
+                                                      @RequestParam(defaultValue = "ALL") BookingFilter state) {
         return map(bookingService.getBookingsOfUserItems(viewerId, from, size, state));
     }
 }

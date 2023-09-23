@@ -3,6 +3,7 @@ package ru.practicum.shareit.booking.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
+import ru.practicum.shareit.booking.filter.BookingFilter;
 import ru.practicum.shareit.booking.model.Booking;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public interface BookingService {
     @Transactional
     Booking update(int viewerId, boolean approved, int bookingId);
 
-    List<Booking> getUserBookings(int viewerId, Integer from, Integer size, String state);
+    List<Booking> getUserBookings(int viewerId, Integer from, Integer size, BookingFilter state);
 
-    List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state);
+    List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, BookingFilter state);
 }

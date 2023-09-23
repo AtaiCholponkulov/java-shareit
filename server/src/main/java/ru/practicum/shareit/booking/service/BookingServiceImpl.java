@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
+import ru.practicum.shareit.booking.filter.BookingFilter;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
@@ -18,6 +19,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.map;
@@ -83,94 +85,87 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> getUserBookings(int viewerId, Integer from, Integer size, String state) {
+    public List<Booking> getUserBookings(int viewerId, Integer from, Integer size, BookingFilter state) {
         getUser(viewerId);
         LocalDateTime now = LocalDateTime.now();
         if (from != null && size != null) {
-            List<Booking> userBookings;
+            List<Booking> userBookings = new ArrayList<>();
             Pageable page = PageRequest.of(0, from + size, Sort.by("endDate").descending());
             switch (state) {
-                case "ALL":
+                case ALL:
                     userBookings = bookingRepository.findByBookerId(viewerId, page);
                     break;
-                case "PAST":
+                case PAST:
                     userBookings = bookingRepository.findByBookerIdAndEndDateBefore(viewerId, now, page);
                     break;
-                case "CURRENT":
+                case CURRENT:
                     userBookings = bookingRepository.findByBookerIdAndStartDateBeforeAndEndDateAfter(viewerId, now, now, page);
                     break;
-                case "FUTURE":
+                case FUTURE:
                     userBookings = bookingRepository.findByBookerIdAndStartDateAfter(viewerId, now, page);
                     break;
-                case "WAITING":
-                case "REJECTED":
-                case "APPROVED":
-                    userBookings = bookingRepository.findByBookerIdAndStatus(viewerId, BookingStatus.valueOf(state), page);
-                    break;
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
+                case WAITING:
+                case REJECTED:
+                case APPROVED:
+                    userBookings = bookingRepository.findByBookerIdAndStatus(viewerId, BookingStatus.valueOf(state.toString()), page);
             }
             return userBookings.subList(from, userBookings.size());
-        } else {
+        } else if (from == null && size == null) {
             switch (state) {
-                case "ALL":
+                case ALL:
                     return bookingRepository.findByBookerIdOrderByEndDateDesc(viewerId);
-                case "PAST":
+                case PAST:
                     return bookingRepository.findByBookerIdAndEndDateBeforeOrderByEndDateDesc(viewerId, now);
-                case "CURRENT":
+                case CURRENT:
                     return bookingRepository.findByBookerIdAndStartDateBeforeAndEndDateAfterOrderByEndDateDesc(viewerId, now, now);
-                case "FUTURE":
+                case FUTURE:
                     return bookingRepository.findByBookerIdAndStartDateAfterOrderByEndDateDesc(viewerId, now);
-                case "WAITING":
-                case "REJECTED":
-                case "APPROVED":
-                    return bookingRepository.findByBookerIdAndStatusOrderByEndDateDesc(viewerId, BookingStatus.valueOf(state));
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
+                case WAITING:
+                case REJECTED:
+                case APPROVED:
+                    return bookingRepository.findByBookerIdAndStatusOrderByEndDateDesc(viewerId, BookingStatus.valueOf(state.toString()));
             }
         }
+        throw new BadRequestException("Ошибочные параметры запроса");
     }
 
     @Override
-    public List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state) {
+    public List<Booking> getBookingsOfUserItems(int viewerId, Integer from, Integer size, BookingFilter state) {
         getUser(viewerId);
         LocalDateTime now = LocalDateTime.now();
         if (from != null && size != null) {
             Pageable page = PageRequest.of(from, size);
             switch (state) {
-                case "ALL":
+                case ALL:
                     return bookingRepository.findByOwnerId(viewerId, page);
-                case "PAST":
+                case PAST:
                     return bookingRepository.findByOwnerIdPast(viewerId, now, page);
-                case "CURRENT":
+                case CURRENT:
                     return bookingRepository.findByOwnerIdCurrent(viewerId, now, now, page);
-                case "FUTURE":
+                case FUTURE:
                     return bookingRepository.findByOwnerIdFuture(viewerId, now, page);
-                case "WAITING":
-                case "REJECTED":
-                case "APPROVED":
-                    return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state), page);
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
+                case WAITING:
+                case REJECTED:
+                case APPROVED:
+                    return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state.toString()), page);
             }
-        } else {
+        } else if (from == null && size == null) {
             switch (state) {
-                case "ALL":
+                case ALL:
                     return bookingRepository.findByOwnerId(viewerId);
-                case "PAST":
+                case PAST:
                     return bookingRepository.findByOwnerIdPast(viewerId, now);
-                case "CURRENT":
+                case CURRENT:
                     return bookingRepository.findByOwnerIdCurrent(viewerId, now, now);
-                case "FUTURE":
+                case FUTURE:
                     return bookingRepository.findByOwnerIdFuture(viewerId, now);
-                case "WAITING":
-                case "REJECTED":
-                case "APPROVED":
-                    return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state));
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
+                case WAITING:
+                case REJECTED:
+                case APPROVED:
+                    return bookingRepository.findByOwnerIdAndStatus(viewerId, BookingStatus.valueOf(state.toString()));
             }
         }
+        throw new BadRequestException("Ошибочные параметры запроса");
     }
 
     private User getUser(int userId) {

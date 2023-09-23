@@ -65,7 +65,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDtoWithBookingsAndComments get(int itemId, int viewerId) {
         moment = LocalDateTime.now();
-        getUser(viewerId);
+        checkUser(viewerId);
         Item dbItem = this.get(itemId);
         List<Comment> comments = commentRepository.findByItemIdOrderByCreatedDesc(itemId);
         ItemDtoWithBookingsAndComments itemDto = map(dbItem, map(comments));
@@ -83,7 +83,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDtoWithBookingsAndComments> getViewerItems(int viewerId, Integer from, Integer size) {
-        getUser(viewerId);
+        checkUser(viewerId);
         moment = LocalDateTime.now();
         List<Item> itemList;
         if (from != null && size != null) {
@@ -112,7 +112,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<Item> search(String word, Integer from, Integer size, int viewerId) {
-        getUser(viewerId);
+        checkUser(viewerId);
         if (word.isBlank()) {
             return new ArrayList<>();
         }
@@ -170,6 +170,12 @@ public class ItemServiceImpl implements ItemService {
         }
         Comment comment = map(commentDto, item, commentator);
         return commentRepository.save(comment);
+    }
+
+    private void checkUser(int userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("Такого пользователя нет в базе id=" + userId);
+        }
     }
 
     private User getUser(int userId) {

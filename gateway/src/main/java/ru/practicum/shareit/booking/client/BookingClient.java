@@ -8,6 +8,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
+import ru.practicum.shareit.booking.filter.BookingFilter;
 import ru.practicum.shareit.client.BaseClient;
 
 import java.util.Map;
@@ -44,7 +45,7 @@ public class BookingClient extends BaseClient {
         return patch("/" + bookingId + "?approved={approved}", viewerId, parameters, null);
     }
 
-    public ResponseEntity<Object> getUserBookings(int viewerId, Integer from, Integer size, String state) {
+    public ResponseEntity<Object> getUserBookings(int viewerId, Integer from, Integer size, BookingFilter state) {
         Map<String, Object> parameters;
         if (validatePaginationParams(from, size)) {
              parameters = Map.of(
@@ -58,7 +59,7 @@ public class BookingClient extends BaseClient {
         return get("?state={state}", viewerId, parameters);
     }
 
-    public ResponseEntity<Object> getBookingsOfUserItems(int viewerId, Integer from, Integer size, String state) {
+    public ResponseEntity<Object> getBookingsOfUserItems(int viewerId, Integer from, Integer size, BookingFilter state) {
         Map<String, Object> parameters;
         if (validatePaginationParams(from, size)) {
              parameters = Map.of(

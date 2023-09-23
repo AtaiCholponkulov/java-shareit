@@ -16,21 +16,28 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ExceptionResponse handleInvalidRequestBodyException(final BadRequestException e) {
-        log.warn(e.getMessage());
+        log.warn(e.getMessage(), e);
         return new ExceptionResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ExceptionResponse handleNotFoundException(final NotFoundException e) {
-        log.warn(e.getMessage());
+        log.warn(e.getMessage(), e);
         return new ExceptionResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     public ExceptionResponse handleNotUniqueEmailException(final NotUniqueEmailException e) {
-        log.warn(e.getMessage());
+        log.warn(e.getMessage(), e);
+        return new ExceptionResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ExceptionResponse handleThrowable(final Throwable e) {
+        log.warn(e.getMessage(), e);
         return new ExceptionResponse(e.getMessage());
     }
 }
