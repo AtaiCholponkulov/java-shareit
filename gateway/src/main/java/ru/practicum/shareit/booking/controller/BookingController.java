@@ -9,6 +9,7 @@ import ru.practicum.shareit.booking.filter.BookingFilter;
 
 import static ru.practicum.shareit.common.Header.X_SHARER_USER_ID;
 import static ru.practicum.shareit.validator.Validator.validate;
+import static ru.practicum.shareit.validator.Validator.validateState;
 
 @RestController
 @RequestMapping(path = "/bookings")
@@ -41,15 +42,17 @@ public class BookingController {
 	public ResponseEntity<Object> getUserBookings(@RequestHeader(name = X_SHARER_USER_ID) int viewerId,
 												  @RequestParam(required = false) Integer from,
 												  @RequestParam(required = false) Integer size,
-												  @RequestParam(defaultValue = "ALL") BookingFilter state) {
-		return bookingClient.getUserBookings(viewerId, from, size, state);
+												  @RequestParam(defaultValue = "ALL") String state) {
+		BookingFilter filter = validateState(state);
+		return bookingClient.getUserBookings(viewerId, from, size, filter);
 	}
 
 	@GetMapping("/owner")
 	public ResponseEntity<Object> getBookingsOfUserItems(@RequestHeader(name = X_SHARER_USER_ID) int viewerId,
 														 @RequestParam(required = false) Integer from,
 														 @RequestParam(required = false) Integer size,
-														 @RequestParam(defaultValue = "ALL") BookingFilter state) {
-		return bookingClient.getBookingsOfUserItems(viewerId, from, size, state);
+														 @RequestParam(defaultValue = "ALL") String state) {
+		BookingFilter filter = validateState(state);
+		return bookingClient.getBookingsOfUserItems(viewerId, from, size, filter);
 	}
 }

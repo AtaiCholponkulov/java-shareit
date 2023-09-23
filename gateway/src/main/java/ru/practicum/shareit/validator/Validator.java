@@ -1,6 +1,7 @@
 package ru.practicum.shareit.validator;
 
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
+import ru.practicum.shareit.booking.filter.BookingFilter;
 import ru.practicum.shareit.exception.model.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -90,5 +91,13 @@ public class Validator {
             return false;//no pagination
         }
         throw new ValidationException("Ошибочные параметры запроса");
+    }
+
+    public static BookingFilter validateState(String state) {
+        try {
+            return BookingFilter.valueOf(state);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Unknown state: " + state);
+        }
     }
 }
